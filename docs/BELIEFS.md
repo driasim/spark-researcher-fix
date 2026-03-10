@@ -10,10 +10,12 @@ Beliefs are compact packets built from evidence that already exists.
 ## Rule
 
 Beliefs compress lessons. They do not replace the raw ledger, review packet, or source diff.
+Belief packets should always point back to their source artifacts.
 
 ## Command
 
 ```powershell
 spark-researcher beliefs build
 ```
+
 
