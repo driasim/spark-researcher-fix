@@ -21,6 +21,8 @@ Self editing is split into `propose` and `apply`.
 
 Use an external coding agent that can run with restrictive permissions. Spark Researcher gives you a transparent packet and a narrow apply path, but it does not pretend to be an operating-system sandbox.
 
+If a backend run succeeds but produces no in-scope diff, the proposal may end with status `no_changes`; inspect the backend's last message before retrying.
+
 Repo-wide backend rules live in `AGENTS.md`. Backend integration expectations live in `docs/AGENT_BACKENDS.md`.
 
 ## Backend Profiles
