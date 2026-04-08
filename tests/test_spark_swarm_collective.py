@@ -4,9 +4,9 @@ import json
 import sys
 from pathlib import Path
 
-from spark_researcher.collective import write_spark_swarm_collective_payload_from_latest
+from spark_researcher.collective import collective_readiness, publish_latest, write_spark_swarm_collective_payload_from_latest
 from spark_researcher.config import load_config
-from spark_researcher.paths import ledger_path, spark_swarm_collective_payload_path
+from spark_researcher.paths import ledger_path, resolve_runtime_root, spark_swarm_collective_payload_path
 from spark_researcher.runner import run_once
 
 
@@ -56,6 +56,28 @@ def _write_manifest(repo_root: Path) -> None:
     )
 
 
+def _write_frontmatter_manifest(repo_root: Path) -> None:
+    (repo_root / "AUTORESEARCH.md").write_text(
+        "\n".join(
+            [
+                "---",
+                "schema_version: 1",
+                "repo: vibeforge1111/starter-lab",
+                "name: Loopsmith Lab",
+                "run_command: spark-researcher run --command train",
+                "publish_command: spark-researcher collective publish",
+                "---",
+                "",
+                "# AUTORESEARCH",
+                "",
+                "Frontmatter-backed manifest.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def test_write_spark_swarm_collective_payload_from_latest(tmp_path: Path) -> None:
     repo_root = tmp_path
     _write_manifest(repo_root)
@@ -90,6 +112,32 @@ def test_write_spark_swarm_collective_payload_from_latest(tmp_path: Path) -> Non
     assert payload["outcomes"][0]["verdict"] == "improved"
 
 
+def test_frontmatter_manifest_drives_identity(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    _write_frontmatter_manifest(repo_root)
+    config_path = _write_config(repo_root)
+    runtime_root = repo_root
+    row = {
+        "run_id": "20260319-train",
+        "created_at": "2026-03-19T12:00:00+00:00",
+        "command_name": "train",
+        "status": "ok",
+        "metric_name": "score",
+        "metric_value": 1.25,
+        "verdict": "improved",
+    }
+    ledger = ledger_path(runtime_root)
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    write_spark_swarm_collective_payload_from_latest(repo_root, runtime_root, load_config(config_path))
+
+    payload = json.loads(spark_swarm_collective_payload_path(repo_root).read_text(encoding="utf-8"))
+    assert payload["agentId"] == "agent:loopsmith-lab"
+    assert payload["specialization"]["key"] == "loopsmith-lab"
+    assert payload["specialization"]["label"] == "Loopsmith Lab"
+
+
 def test_run_once_writes_spark_swarm_collective_payload(tmp_path: Path) -> None:
     repo_root = tmp_path
     _write_manifest(repo_root)
@@ -104,3 +152,26 @@ def test_run_once_writes_spark_swarm_collective_payload(tmp_path: Path) -> None:
     assert payload["outcomes"][0]["metricValue"] == 1.5
     assert payload["runtimePulse"]["stageKey"] == "train"
     assert payload["insights"][0]["id"] == f"insight:{record['run_id']}"
+
+
+def test_collective_readiness_tracks_latest_payload_and_capsule(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    _write_frontmatter_manifest(repo_root)
+    (repo_root / "train.py").write_text("print('score=1.5')\n", encoding="utf-8")
+    config_path = _write_config(repo_root)
+    runtime_root = resolve_runtime_root(config_path)
+
+    readiness = collective_readiness(repo_root, runtime_root)
+    assert readiness["ready"] is False
+    assert "latest_metric_run_present" in readiness["missing"]
+
+    record = run_once(config_path, "train")
+    assert record["status"] == "ok"
+    readiness = collective_readiness(repo_root, runtime_root)
+    assert readiness["checks"]["spark_swarm_payload_current"] is True, readiness
+    assert readiness["checks"]["capsule_present_for_latest_run"] is False
+
+    publish_latest(repo_root, runtime_root)
+    readiness = collective_readiness(repo_root, runtime_root)
+    assert readiness["ready"] is True
+    assert readiness["latest_metric_run"] == record["run_id"]
