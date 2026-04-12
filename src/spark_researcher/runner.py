@@ -98,6 +98,19 @@ def copy_project_tree(source_root: Path, target_root: Path, *, extra_excludes: l
     )
 
 
+def cleanup_workspace(workspace_root: Path) -> None:
+    if workspace_root.exists():
+        shutil.rmtree(workspace_root, ignore_errors=True)
+
+
+def safe_finish_trace(trace: Any, *, status: str, attributes: dict[str, Any] | None = None) -> None:
+    try:
+        trace.finish(status=status, attributes=attributes or {})
+    except OSError:
+        # Trace persistence should never hide the original run failure.
+        return
+
+
 def run_process(command: list[str], cwd: Path, log_path: Path, *, dry_run: bool = False) -> CommandResult:
     ensure_parent(log_path)
     if dry_run:
@@ -446,7 +459,7 @@ def run_once(
         record["trace_path"] = str(trace.path)
         if dry_run:
             record["dry_run"] = True
-            trace.finish(status="ok", attributes={"mode": "dry_run", "verdict": verdict, "metric_value": numeric_metric})
+            safe_finish_trace(trace, status="ok", attributes={"mode": "dry_run", "verdict": verdict, "metric_value": numeric_metric})
             return record
         with trace.span("persist_record", attributes={"verdict": verdict, "metric_value": numeric_metric}):
             ensure_parent(run_dir / "result.json")
@@ -480,11 +493,13 @@ def run_once(
                     "mutations": list(record.get("applied_mutations", [])),
                 },
             )
-        trace.finish(status="ok", attributes={"verdict": verdict, "metric_value": numeric_metric})
+        safe_finish_trace(trace, status="ok", attributes={"verdict": verdict, "metric_value": numeric_metric})
         return record
     except Exception as exc:
-        trace.finish(status="error", attributes={"error": str(exc)})
+        safe_finish_trace(trace, status="error", attributes={"error": str(exc)})
         raise
+    finally:
+        cleanup_workspace(workspace_root)
 
 
 def parse_overrides(items: list[str] | None) -> dict[str, str]:

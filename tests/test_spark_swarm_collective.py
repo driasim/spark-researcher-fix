@@ -409,6 +409,9 @@ def test_run_once_writes_spark_swarm_collective_payload(tmp_path: Path) -> None:
     assert payload["runtimePulse"]["stageKey"] == "train"
     assert payload["insights"][0]["id"] == f"insight:{record['run_id']}"
     assert "benchmarkMetrics" not in payload["outcomes"][0]
+    assert not Path(record["workspace_root"]).exists()
+    assert Path(record["log_path"]).exists()
+    assert Path(record["run_dir"], "result.json").exists()
 
 
 def test_run_once_dry_run_does_not_persist_ledger_or_swarm_payload(tmp_path: Path) -> None:
@@ -424,6 +427,7 @@ def test_run_once_dry_run_does_not_persist_ledger_or_swarm_payload(tmp_path: Pat
     assert record["dry_run"] is True
     assert not ledger_path(runtime_root).exists()
     assert not spark_swarm_collective_payload_path(repo_root).exists()
+    assert not Path(record["workspace_root"]).exists()
 
 
 def test_collective_readiness_tracks_latest_payload_and_capsule(tmp_path: Path, monkeypatch) -> None:
