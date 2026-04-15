@@ -1,1 +1,0 @@
-"""Trust compliance Spark chip."""

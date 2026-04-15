@@ -14,8 +14,9 @@ Read these first if you are new to the repo:
 
 1. [`README.md`](../README.md)
 2. [`docs/ARCHITECTURE.md`](ARCHITECTURE.md)
-3. [`docs/RULES.md`](RULES.md)
-4. [`docs/CHECKLOOP.md`](CHECKLOOP.md)
+3. [`docs/AUTOLOOP.md`](AUTOLOOP.md)
+4. [`docs/MEMORY.md`](MEMORY.md)
+5. [`examples/toy-project/README.md`](../examples/toy-project/README.md)
 
 ## Publication Tiers
 
@@ -27,16 +28,19 @@ Current rule:
 - reference docs should remain available for agents and advanced operators
 - archive docs should stay in the repo for now so links and agent understanding do not regress
 
-## Core Operator Docs
+## Core Docs
 
-- [`docs/AUTOLOOP.md`](AUTOLOOP.md): bounded autonomous loop behavior and limits
-- [`docs/ADVISORY.md`](ADVISORY.md): packet-backed model path, verifier loop, and provider execution
-- [`docs/MEMORY.md`](MEMORY.md): local memory policy, promotion gate, and retrieval backend boundary
-- [`docs/BELIEFS.md`](BELIEFS.md): how durable and provisional beliefs are built
-- [`docs/INTENT.md`](INTENT.md): persistent mission settings for projects and chips
-- [`docs/SELF_EDITING.md`](SELF_EDITING.md): propose/apply flow for workspace-only self edits
-- [`docs/AGENT_BACKENDS.md`](AGENT_BACKENDS.md): backend contract for external coding agents
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md): core runtime model and Spark Swarm boundary
+- [`docs/RULES.md`](RULES.md): non-negotiable system rules
+- [`docs/AUTOLOOP.md`](AUTOLOOP.md): bounded loop behavior and limits
+- [`docs/MEMORY.md`](MEMORY.md): memory policy and promotion semantics
 - [`docs/OBSIDIAN.md`](OBSIDIAN.md): watchtower output and vault expectations
+- [`docs/SELF_EDITING.md`](SELF_EDITING.md): propose/apply flow for workspace-only self edits
+- [`docs/ADVISORY.md`](ADVISORY.md): packet-backed model path, verifier loop, and provider execution
+- [`docs/AGENT_BACKENDS.md`](AGENT_BACKENDS.md): backend contract for external coding agents
+- [`docs/CHIPS.md`](CHIPS.md): chip contract and ownership boundary
+- [`docs/CHIP_SYSTEMS.md`](CHIP_SYSTEMS.md): chooser for `v1` vs `v2`
+- [`docs/CHIP_VALIDATION.md`](CHIP_VALIDATION.md): standard chip validation path
 - [`docs/PRESETS.md`](PRESETS.md): scaffold presets
 
 ## Spark Swarm Integration
@@ -52,12 +56,13 @@ Use these docs first for that integration:
 For this integration, treat [`README.md`](../README.md) and [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) as the authoritative docs.
 Treat generated local files like `AUTORESEARCH.md` and `PROJECT.md` as operational residue, not architecture doctrine.
 
-## Domain Chip Docs
+## Reference Docs
 
-- [`docs/CHIPS.md`](CHIPS.md): chip contract, ownership boundary, and scaffold flow
-- [`docs/CHIP_SYSTEMS.md`](CHIP_SYSTEMS.md): chooser for `v1` vs `v2` chip design systems
+- [`docs/CHECKLOOP.md`](CHECKLOOP.md): local proving-ground flow before trusting a change
+- [`docs/RELIABILITY_TEST_PLAN.md`](RELIABILITY_TEST_PLAN.md): subsystem-by-subsystem reliability audit
+- [`docs/BELIEFS.md`](BELIEFS.md): how durable and provisional beliefs are built
+- [`docs/INTENT.md`](INTENT.md): persistent mission settings for projects and chips
 - [`docs/CHIP_BAKEOFF.md`](CHIP_BAKEOFF.md): evaluation plan for comparing `v1` and `v2`
-- [`docs/CHIP_VALIDATION.md`](CHIP_VALIDATION.md): standard chip validation path
 - [`docs/CHIP_REGISTRY.md`](CHIP_REGISTRY.md): known chips
 - [`docs/CHIP_MEMORY_ROLLOUT.md`](CHIP_MEMORY_ROLLOUT.md): chip memory upgrade path
 - [`docs/CHIP_INTELLIGENCE_CONTRACT.md`](CHIP_INTELLIGENCE_CONTRACT.md): reusable chip intelligence contract
@@ -72,13 +77,6 @@ Treat generated local files like `AUTORESEARCH.md` and `PROJECT.md` as operation
 - [`docs/MASTER_CHIP_ARCHITECT_PROMPT.md`](MASTER_CHIP_ARCHITECT_PROMPT.md): `v1` chip design prompt
 - [`docs/master_chip_v2/README.md`](master_chip_v2/README.md): `v2` chip prompt stack
 
-## Reliability And Review
-
-- [`docs/CHECKLOOP.md`](CHECKLOOP.md): local proving-ground flow before trusting a change
-- [`docs/RELIABILITY_TEST_PLAN.md`](RELIABILITY_TEST_PLAN.md): subsystem-by-subsystem reliability audit
-- [`docs/ADVISORY.md`](ADVISORY.md): verifier and research retry boundaries
-- [`docs/SELF_EDITING.md`](SELF_EDITING.md): self-edit review and apply boundaries
-
 ## Archive And Deep Background
 
 Use [`docs/archive/README.md`](archive/README.md) for archived deep-background docs, internal examples, and backlog material that should stay available without remaining on the public front door.
@@ -87,7 +85,7 @@ Use [`docs/archive/README.md`](archive/README.md) for archived deep-background d
 
 - [`AUTORESEARCH.md`](../AUTORESEARCH.md): compact machine-readable repo capsule plus summary
 - [`AGENTS.md`](../AGENTS.md): contract for external coding agents working in this repo
-- [`PROJECT.md`](../PROJECT.md): current project intelligence snapshot
+- `PROJECT.md`: optional local project snapshot when present; not part of the published repo surface
 
 ## Domain Repo Docs
 

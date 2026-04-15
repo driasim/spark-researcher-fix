@@ -25,6 +25,49 @@ From there, it grew a few extra systems around that core:
 - artifact and memory systems that stay intelligent, inspectable, and human-readable
 - bounded self-editing, advisory, and review flows that keep the system useful without turning it into a black box
 
+## Quick Take
+
+Spark Researcher is for situations where you already have:
+
+- one project
+- one command you trust
+- one metric you care about
+
+And you want a local loop that can:
+
+- run the command
+- score the result
+- keep an immutable ledger
+- save reusable lessons
+- suggest the next bounded experiment
+
+If that is your use case, you can get value from the toy project in a few minutes.
+
+## First Run In 5 Minutes
+
+From the repo root:
+
+```powershell
+python -m pip install -e .
+spark-researcher run --command train
+spark-researcher autoloop --command train --rounds 3 --suggest-limit 3
+spark-researcher memory sync
+spark-researcher obsidian build
+spark-researcher summary
+```
+
+The default config already points at [`examples/toy-project/`](examples/toy-project/README.md), so this works without extra setup.
+
+What success looks like:
+
+- `run` prints a numeric `val_loss`
+- `autoloop` records a few candidate trials and verdicts
+- `memory sync` writes Markdown docs under `artifacts/memory/`
+- `obsidian build` writes generated watchtower pages under `obsidian-vault/`
+- `summary` shows the current ledger and trace state
+
+If you want the exact toy walkthrough, use [`examples/toy-project/README.md`](examples/toy-project/README.md).
+
 ## What It Feels Like
 
 Think of it as a careful lab assistant for a project.
@@ -83,6 +126,17 @@ Spark can suggest the next trial
 - building domain-specific research or evaluation systems through `domain-chip-*` repos
 - sharing portable lessons into a collective intelligence network through capsule exports
 - building domain-specific "chips" without bloating the core repo
+
+## Optional Integrations
+
+The core loop does not require Spark Swarm, domain chips, Obsidian, or self-edit.
+
+Those become useful when you want:
+
+- Spark Swarm specialization-path execution
+- external domain-specific scoring and suggestion logic
+- a browsable Obsidian watchtower
+- bounded code-change proposals
 
 ## Spark Swarm Runtime Core
 
@@ -176,9 +230,10 @@ You review the proposal
 cd path\to\spark-researcher
 python -m pip install -e .
 spark-researcher run --command train
-spark-researcher loop --command train
-spark-researcher autoloop --command train
-spark-researcher self-edit propose --prompt "simplify the trainer status output"
+spark-researcher autoloop --command train --rounds 3 --suggest-limit 3
+spark-researcher memory sync
+spark-researcher obsidian build
+spark-researcher summary
 ```
 
 The bundled config points at [`examples/toy-project/`](examples/toy-project/README.md), so you can run the core loop without setting up a separate project first.
@@ -237,9 +292,19 @@ Nothing important is hidden behind a database by default.
 
 For Spark Swarm specialization-path work, the main architecture notes are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Rule:
-- never place a `domain-chip-*` repo inside the `spark-researcher` repo tree
+Recommended rule for your own chips:
+
 - create chips as sibling repos outside `spark-researcher`, for example `..\domain-chip-foo`
+
+## What Gets Written On First Run
+
+After the first few commands, the main local outputs are:
+
+- `artifacts/`: logs, traces, ledgers, memory exports, and other runtime output
+- `obsidian-vault/`: generated watchtower pages for operator browsing
+- `.autoresearch/capsules/`: portable capsule exports when collective publishing is used
+
+Nothing important is hidden behind a database by default.
 
 ## Where To Read Next
 
@@ -248,7 +313,7 @@ If you are new:
 1. [`docs/README.md`](docs/README.md)
 2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 3. [`docs/RULES.md`](docs/RULES.md)
-4. [`docs/CHECKLOOP.md`](docs/CHECKLOOP.md)
+4. [`docs/AUTOLOOP.md`](docs/AUTOLOOP.md)
 
 If you want a specific area:
 
@@ -259,6 +324,7 @@ If you want a specific area:
 - external coding backend contract: [`docs/AGENT_BACKENDS.md`](docs/AGENT_BACKENDS.md)
 - domain-chip system: [`docs/CHIPS.md`](docs/CHIPS.md)
 - chip design systems (`v1` vs `v2`): [`docs/CHIP_SYSTEMS.md`](docs/CHIP_SYSTEMS.md)
+- toy project walkthrough: [`examples/toy-project/README.md`](examples/toy-project/README.md)
 - docs publishing map: [`docs/PUBLICATION_MAP.md`](docs/PUBLICATION_MAP.md)
 
 ## Boundaries
@@ -280,3 +346,4 @@ Spark Researcher is intentionally opinionated:
 
 For the full documentation map, use [`docs/README.md`](docs/README.md).
 For the safe public-vs-reference split, use [`docs/PUBLICATION_MAP.md`](docs/PUBLICATION_MAP.md).
+The project is released under the [MIT License](LICENSE).

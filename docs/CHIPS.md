@@ -4,7 +4,7 @@ Domain chips keep `spark-researcher` small.
 
 ## Contract
 
-A chip is an external repo with:
+A chip is normally an external repo with:
 
 - `spark-chip.json`
 - `AUTORESEARCH.md`
@@ -22,6 +22,8 @@ Spark calls chip hooks with `--input <json> --output <json>`.
 - `run_command`
 - `publish_command`
 - collective and adoption policy
+
+The recommended structure is a sibling repo outside `spark-researcher`.
 
 Supported hooks:
 

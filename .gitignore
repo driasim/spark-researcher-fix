@@ -1,5 +1,6 @@
 artifacts/
 obsidian-vault/
+.spark-swarm/
 .pytest_cache/
 __pycache__/
 .venv/

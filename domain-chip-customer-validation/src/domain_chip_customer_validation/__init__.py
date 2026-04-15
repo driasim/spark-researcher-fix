@@ -1,1 +1,0 @@
-"""Customer validation Spark chip."""

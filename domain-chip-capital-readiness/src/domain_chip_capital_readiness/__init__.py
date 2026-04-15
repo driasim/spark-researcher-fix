@@ -1,1 +1,0 @@
-"""Capital readiness Spark chip."""

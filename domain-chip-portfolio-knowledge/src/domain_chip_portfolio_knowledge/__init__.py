@@ -1,1 +1,0 @@
-"""Portfolio knowledge Spark chip."""
