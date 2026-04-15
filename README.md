@@ -43,6 +43,40 @@ And you want a local loop that can:
 
 If that is your use case, you can get value from the toy project in a few minutes.
 
+## Install
+
+Spark Researcher requires Python `3.10+`.
+
+If you want the bundled demo project and docs exactly as they ship in this repo:
+
+```powershell
+git clone https://github.com/vibeforge1111/spark-researcher.git
+cd spark-researcher
+python -m pip install -e .
+```
+
+If you want the CLI available globally with `pipx`:
+
+```powershell
+pipx install git+https://github.com/vibeforge1111/spark-researcher.git
+```
+
+One-command bootstrap:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vibeforge1111/spark-researcher/main/scripts/install.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/vibeforge1111/spark-researcher/main/scripts/install.ps1 | iex
+```
+
+Important distinction:
+
+- clone the repo if you want the bundled toy project immediately
+- use `pipx` or the bootstrap scripts if you want the CLI globally
+- after a global install, create a runnable first project with `spark-researcher init`
+
 ## First Run In 5 Minutes
 
 From the repo root:
@@ -67,6 +101,30 @@ What success looks like:
 - `summary` shows the current ledger and trace state
 
 If you want the exact toy walkthrough, use [`examples/toy-project/README.md`](examples/toy-project/README.md).
+
+## Start Without Cloning
+
+If you installed the CLI globally, you can generate a runnable toy project with one command:
+
+```powershell
+spark-researcher init --path spark-demo --preset toy --project-name spark-demo
+cd spark-demo
+spark-researcher run --command train
+spark-researcher autoloop --command train --rounds 3 --suggest-limit 3
+spark-researcher memory sync
+spark-researcher obsidian build
+spark-researcher summary
+```
+
+That writes a self-contained mini-project with:
+
+- `spark-researcher.project.json`
+- `train.py`
+- `trainer.py`
+- `config.json`
+- `training_examples.jsonl`
+
+So the global install path is now usable without cloning this repo first.
 
 ## What It Feels Like
 
