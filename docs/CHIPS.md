@@ -59,6 +59,8 @@ Use this document to understand what Spark itself expects the chip to implement.
 
 Chips are not limited to passive domain knowledge gathering.
 
+![Domain Chip Boundary](assets/domain-chip-boundary.svg)
+
 They can govern any bounded task family where Spark needs domain-specific logic for:
 
 - evaluation

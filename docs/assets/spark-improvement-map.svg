@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" role="img" aria-labelledby="title desc">
+  <title id="title">What Spark Can Improve</title>
+  <desc id="desc">A map showing Spark Researcher in the center with spokes to research, prompts, coding tasks, browser workflows, API tools, content systems, trading strategy, and internal tools, plus the three conditions for self-improvement loops.</desc>
+  <defs>
+    <style>
+      .bg { fill: #fcfcfb; }
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #111111; }
+      .subtitle { font: 400 18px 'Segoe UI', Arial, sans-serif; fill: #4b5563; }
+      .center { fill: #111111; stroke: #111111; stroke-width: 2.5; rx: 30; ry: 30; }
+      .node { fill: #ffffff; stroke: #111111; stroke-width: 2.5; rx: 18; ry: 18; }
+      .accent { fill: #fff3e8; stroke: #d97706; stroke-width: 2.5; rx: 18; ry: 18; }
+      .line { stroke: #111111; stroke-width: 3; }
+      .label { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #111111; }
+      .centerLabel { font: 700 26px 'Segoe UI', Arial, sans-serif; fill: #ffffff; }
+      .body { font: 400 16px 'Segoe UI', Arial, sans-serif; fill: #374151; }
+      .centerBody { font: 400 16px 'Segoe UI', Arial, sans-serif; fill: #d1d5db; }
+      .note { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: #b45309; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="820"/>
+  <text class="title" x="60" y="70">What Spark Can Improve</text>
+  <text class="subtitle" x="60" y="105">Spark is a general self-improvement runtime when the task can be run, scored, and mutated in a bounded way.</text>
+
+  <line class="line" x1="600" y1="330" x2="255" y2="215"/>
+  <line class="line" x1="600" y1="330" x2="430" y2="155"/>
+  <line class="line" x1="600" y1="330" x2="770" y2="155"/>
+  <line class="line" x1="600" y1="330" x2="945" y2="215"/>
+  <line class="line" x1="600" y1="330" x2="235" y2="440"/>
+  <line class="line" x1="600" y1="330" x2="430" y2="515"/>
+  <line class="line" x1="600" y1="330" x2="770" y2="515"/>
+  <line class="line" x1="600" y1="330" x2="965" y2="440"/>
+
+  <rect class="center" x="430" y="250" width="340" height="160"/>
+  <text class="centerLabel" x="500" y="305">Spark Researcher</text>
+  <text class="centerBody" x="485" y="336">Generic kernel for bounded</text>
+  <text class="centerBody" x="485" y="360">self-improving loops.</text>
+
+  <rect class="node" x="115" y="165" width="220" height="88"/>
+  <text class="label" x="165" y="204">Research</text>
+  <text class="body" x="145" y="230">Sources, packets, doctrine.</text>
+
+  <rect class="node" x="320" y="105" width="220" height="88"/>
+  <text class="label" x="385" y="144">Prompts</text>
+  <text class="body" x="350" y="170">Variants, evals, retries.</text>
+
+  <rect class="node" x="660" y="105" width="220" height="88"/>
+  <text class="label" x="718" y="144">Coding Tasks</text>
+  <text class="body" x="700" y="170">Diffs, tests, review loops.</text>
+
+  <rect class="node" x="865" y="165" width="220" height="88"/>
+  <text class="label" x="905" y="204">Browser Workflows</text>
+  <text class="body" x="905" y="230">Task completion quality.</text>
+
+  <rect class="node" x="95" y="395" width="240" height="88"/>
+  <text class="label" x="150" y="434">API Tools</text>
+  <text class="body" x="130" y="460">Calls, payloads, usefulness.</text>
+
+  <rect class="node" x="320" y="500" width="220" height="88"/>
+  <text class="label" x="360" y="539">Content Systems</text>
+  <text class="body" x="365" y="565">Hooks, reach, quality.</text>
+
+  <rect class="node" x="660" y="500" width="220" height="88"/>
+  <text class="label" x="700" y="539">Trading / Strategy</text>
+  <text class="body" x="705" y="565">Signals, risk, outcomes.</text>
+
+  <rect class="node" x="865" y="395" width="240" height="88"/>
+  <text class="label" x="910" y="434">Internal Tools / Plugins</text>
+  <text class="body" x="925" y="460">Usage and task quality.</text>
+
+  <rect class="accent" x="200" y="680" width="800" height="92"/>
+  <text class="note" x="245" y="718">Spark is a good fit when all three exist:</text>
+  <text class="body" x="245" y="748">1. a runnable surface   2. a measurable score   3. a bounded mutation space</text>
+</svg>

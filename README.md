@@ -131,6 +131,8 @@ Spark can suggest the next trial
 
 Spark Researcher is designed so the kernel stays small while domain or task logic stays modular.
 
+![What Spark Can Improve](docs/assets/spark-improvement-map.svg)
+
 That means the same runtime can improve:
 
 - reasoning and research workflows
@@ -158,6 +160,10 @@ In practice, a chip can teach Spark how to:
 - suggest the next bounded experiment
 - turn outcomes into promoted doctrine or boundaries
 - render a watchtower surface for operators
+
+### Domain Chip Boundary
+
+![Domain Chip Boundary](docs/assets/domain-chip-boundary.svg)
 
 That is why Spark can be about more than reasoning alone.
 With the right chip, it can get better at real tasks too.
@@ -272,6 +278,10 @@ You review the proposal
         |
         \---- apply -----> Spark copies allowed files back
 ```
+
+### Self-Evolution Loop
+
+![Bounded Self-Evolution Loop](docs/assets/self-evolution-loop.svg)
 
 ## Quick Start
 

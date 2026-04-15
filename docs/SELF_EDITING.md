@@ -2,6 +2,8 @@
 
 Self editing is split into `propose` and `apply`.
 
+![Bounded Self-Evolution Loop](assets/self-evolution-loop.svg)
+
 ## Propose
 
 - copies the repo into `artifacts/self-edit/<proposal_id>/workspace/`

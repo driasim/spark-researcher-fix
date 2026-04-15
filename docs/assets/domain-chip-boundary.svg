@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Spark Researcher Domain Chip Boundary</title>
+  <desc id="desc">A diagram showing the generic Spark kernel on one side and an external domain chip repo on the other, with their ownership boundaries and hook connections.</desc>
+  <defs>
+    <style>
+      .bg { fill: #fcfcfb; }
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #111111; }
+      .subtitle { font: 400 18px 'Segoe UI', Arial, sans-serif; fill: #4b5563; }
+      .panel { fill: #ffffff; stroke: #111111; stroke-width: 2.5; rx: 24; ry: 24; }
+      .kernel { fill: #f5f7fb; stroke: #111111; stroke-width: 2.5; rx: 20; ry: 20; }
+      .chip { fill: #fff3e8; stroke: #d97706; stroke-width: 2.5; rx: 20; ry: 20; }
+      .hook { fill: #ffffff; stroke: #111111; stroke-width: 2; rx: 14; ry: 14; }
+      .label { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #111111; }
+      .sub { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: #111111; }
+      .body { font: 400 16px 'Segoe UI', Arial, sans-serif; fill: #374151; }
+      .small { font: 400 15px 'Segoe UI', Arial, sans-serif; fill: #374151; }
+      .arrow { stroke: #111111; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#111111"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="760"/>
+  <text class="title" x="60" y="70">Domain Chip Boundary</text>
+  <text class="subtitle" x="60" y="105">The kernel stays generic. The chip carries domain or task-specific intelligence in a separate repo.</text>
+
+  <rect class="kernel" x="60" y="150" width="470" height="520"/>
+  <text class="label" x="95" y="195">Spark Researcher Kernel</text>
+  <text class="body" x="95" y="228">Owns the reusable runtime and the reviewable system surfaces.</text>
+
+  <text class="sub" x="95" y="280">Kernel Owns</text>
+  <text class="small" x="95" y="314">- loop execution</text>
+  <text class="small" x="95" y="342">- run workspaces</text>
+  <text class="small" x="95" y="370">- metric parsing and ledger writes</text>
+  <text class="small" x="95" y="398">- frontier queue</text>
+  <text class="small" x="95" y="426">- memory index and packet search</text>
+  <text class="small" x="95" y="454">- Obsidian vault root</text>
+  <text class="small" x="95" y="482">- self-edit policy and apply path</text>
+  <text class="small" x="95" y="510">- collective export plumbing</text>
+
+  <rect class="hook" x="250" y="555" width="200" height="74"/>
+  <text class="sub" x="285" y="596">Hook I/O Bridge</text>
+  <text class="small" x="285" y="620">JSON in / JSON out</text>
+
+  <rect class="chip" x="670" y="150" width="470" height="520"/>
+  <text class="label" x="705" y="195">External Domain Chip Repo</text>
+  <text class="body" x="705" y="228">Owns the task-specific logic that should not bloat the kernel.</text>
+
+  <text class="sub" x="705" y="280">Chip Owns</text>
+  <text class="small" x="705" y="314">- `evaluate`</text>
+  <text class="small" x="705" y="342">- `suggest`</text>
+  <text class="small" x="705" y="370">- `packets`</text>
+  <text class="small" x="705" y="398">- `watchtower`</text>
+  <text class="small" x="705" y="426">- domain docs and specs</text>
+  <text class="small" x="705" y="454">- domain tests</text>
+  <text class="small" x="705" y="482">- collective identity in `AUTORESEARCH.md`</text>
+  <text class="small" x="705" y="510">- mutation grammar and promotion rules</text>
+
+  <rect class="hook" x="790" y="555" width="220" height="74"/>
+  <text class="sub" x="828" y="596">Separate Repo</text>
+  <text class="small" x="828" y="620">`domain-chip-*` sibling</text>
+
+  <path class="arrow" d="M450 592 H790"/>
+
+  <rect class="panel" x="250" y="60" width="700" height="56" opacity="0"/>
+  <text class="body" x="275" y="712">Key idea: if the task has a run surface, a score surface, and a mutation surface, the chip can modularize it while Spark stays generic.</text>
+</svg>
