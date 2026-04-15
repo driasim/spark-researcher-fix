@@ -63,7 +63,6 @@ Treat generated local files like `AUTORESEARCH.md` and `PROJECT.md` as operation
 - [`docs/RELIABILITY_TEST_PLAN.md`](RELIABILITY_TEST_PLAN.md): subsystem-by-subsystem reliability audit
 - [`docs/BELIEFS.md`](BELIEFS.md): how durable and provisional beliefs are built
 - [`docs/INTENT.md`](INTENT.md): persistent mission settings for projects and chips
-- [`docs/CHIP_BAKEOFF.md`](CHIP_BAKEOFF.md): evaluation plan for comparing `v1` and `v2`
 - [`docs/CHIP_REGISTRY.md`](CHIP_REGISTRY.md): known chips
 - [`docs/CHIP_MEMORY_ROLLOUT.md`](CHIP_MEMORY_ROLLOUT.md): chip memory upgrade path
 - [`docs/CHIP_INTELLIGENCE_CONTRACT.md`](CHIP_INTELLIGENCE_CONTRACT.md): reusable chip intelligence contract

@@ -2,8 +2,7 @@
 
 This document defines the safe documentation split for publishing Spark Researcher without losing agent/operator understanding.
 
-This is a logical archive map for now.
-Files stay in place so links, agent context, Spark Swarm references, and operator habits do not regress.
+This is the current archive map for publishing Spark Researcher without losing agent/operator understanding.
 
 ## Must Stay Public
 
@@ -69,6 +68,7 @@ These docs can be treated as archive/internal/deep-background material for publi
 They now belong under [`docs/archive/`](archive/README.md) unless a runtime contract still depends on the original path:
 
 - [`docs/archive/CHIP_ECOSYSTEM_HARDENING_PLAN.md`](archive/CHIP_ECOSYSTEM_HARDENING_PLAN.md)
+- [`docs/archive/CHIP_BAKEOFF.md`](archive/CHIP_BAKEOFF.md)
 - [`docs/archive/EXTERNAL_CHIP_TASKS.md`](archive/EXTERNAL_CHIP_TASKS.md)
 - [`docs/archive/CHIP_REMEDIATION_PROMPTS.md`](archive/CHIP_REMEDIATION_PROMPTS.md)
 - [`docs/archive/AI_LAB_MAP.md`](archive/AI_LAB_MAP.md)
@@ -98,7 +98,6 @@ Those are core system semantics, not optional background reading.
 
 For now:
 
-- keep the files where they are
-- reduce front-door links to the "must stay public" set
+- keep the front door reduced to the "must stay public" set
 - keep the "reference" set linked from docs for agents and advanced operators
 - stop linking the "archive" set from public entry docs unless a reader is explicitly looking for deep background

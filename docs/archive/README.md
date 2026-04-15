@@ -8,6 +8,7 @@ These files are kept in the repo so historical context and agent references do n
 
 - strategy/background essays
 - backlog and hardening plans
+- evaluation and bakeoff plans that no longer belong on the public docs path
 - remediation prompt collections
 - experimental reference materials
 - internal examples that are useful, but not part of the front-door system story

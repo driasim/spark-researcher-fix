@@ -9,16 +9,16 @@ The goal is to learn which system works better for which kinds of chip domains.
 
 Compare:
 
-- `v1`: [`docs/MASTER_CHIP_ARCHITECT_PROMPT.md`](MASTER_CHIP_ARCHITECT_PROMPT.md)
-- `v2`: [`docs/master_chip_v2/README.md`](master_chip_v2/README.md)
+- `v1`: [`docs/MASTER_CHIP_ARCHITECT_PROMPT.md`](../MASTER_CHIP_ARCHITECT_PROMPT.md)
+- `v2`: [`docs/master_chip_v2/README.md`](../master_chip_v2/README.md)
 
 Shared runtime contract:
 
-- [`docs/CHIPS.md`](CHIPS.md)
+- [`docs/CHIPS.md`](../CHIPS.md)
 
 Chooser and framing:
 
-- [`docs/CHIP_SYSTEMS.md`](CHIP_SYSTEMS.md)
+- [`docs/CHIP_SYSTEMS.md`](../CHIP_SYSTEMS.md)
 
 Recommended workspace:
 

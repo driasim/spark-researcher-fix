@@ -75,4 +75,4 @@ Good candidates:
 
 That gives you real evidence for where `v1` or `v2` is actually stronger instead of choosing on taste alone.
 
-For the actual rubric and test shape, use [`docs/CHIP_BAKEOFF.md`](CHIP_BAKEOFF.md).
+For the archived rubric and test shape, use [`docs/archive/CHIP_BAKEOFF.md`](archive/CHIP_BAKEOFF.md).
