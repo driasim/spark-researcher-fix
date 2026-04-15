@@ -21,6 +21,7 @@ These documents form the public operating surface and should remain easy to find
 - [`docs/AGENT_BACKENDS.md`](AGENT_BACKENDS.md)
 - [`docs/PRESETS.md`](PRESETS.md)
 - [`docs/CHIPS.md`](CHIPS.md)
+- [`docs/CHIP_AUTHORING.md`](CHIP_AUTHORING.md)
 - [`docs/CHIP_SYSTEMS.md`](CHIP_SYSTEMS.md)
 - [`docs/CHIP_VALIDATION.md`](CHIP_VALIDATION.md)
 
@@ -30,6 +31,7 @@ These are the minimum docs needed for a new reader or agent to understand:
 - how the runtime works
 - how Spark Swarm connects to it
 - how domain chips connect to it
+- how to design a usable chip with an LLM
 - how memory and Obsidian fit in
 - how self-editing and advisory work
 

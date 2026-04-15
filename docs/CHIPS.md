@@ -55,6 +55,30 @@ Spark has one runtime chip contract and two design systems.
 Use `v1` or `v2` to design the chip.
 Use this document to understand what Spark itself expects the chip to implement.
 
+## What Chips Can Govern
+
+Chips are not limited to passive domain knowledge gathering.
+
+They can govern any bounded task family where Spark needs domain-specific logic for:
+
+- evaluation
+- next-step suggestion
+- packet promotion
+- watchtower rendering
+
+That includes:
+
+- research domains
+- content systems
+- trading or strategy loops
+- coding or review workflows
+- browser or API task loops
+- plugins or internal tools that should improve over repeated runs
+
+If the task has a run surface, a score surface, and a mutation surface, a chip can usually modularize it.
+
+Use [`docs/CHIP_AUTHORING.md`](CHIP_AUTHORING.md) for the practical build guide.
+
 ## Related Docs
 
 - validation: `docs/CHIP_VALIDATION.md`, `docs/CHECKLOOP.md`
@@ -103,6 +127,21 @@ The starter writes only the minimum valid repo:
 - `README.md`
 - `src/<package>/__init__.py`
 - `src/<package>/cli.py`
+
+## Working With An LLM
+
+When using an LLM to build or evolve a chip:
+
+- keep the chip in its own repo
+- keep kernel changes separate from chip changes
+- ask for explicit implementations of `evaluate`, `suggest`, `packets`, and `watchtower`
+- require tests for the highest-risk evaluator and watchtower behavior
+- keep mutation fields and promotion rules explicit
+
+Do not ask the LLM to "make it more agentic" in the abstract.
+Ask it to improve one concrete surface at a time.
+
+Use [`docs/CHIP_AUTHORING.md`](CHIP_AUTHORING.md) for a concrete authoring workflow and prompt shape.
 
 The init command also returns a `next_steps` list for the standalone repo bootstrap flow, including:
 

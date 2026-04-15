@@ -127,6 +127,41 @@ Spark can suggest the next trial
 - sharing portable lessons into a collective intelligence network through capsule exports
 - building domain-specific "chips" without bloating the core repo
 
+## Modularity
+
+Spark Researcher is designed so the kernel stays small while domain or task logic stays modular.
+
+That means the same runtime can improve:
+
+- reasoning and research workflows
+- domain knowledge gathering
+- prompt systems
+- tool-using workflows
+- API-backed tasks
+- browser or automation tasks
+- coding or review tasks
+- operational routines with a measurable outcome
+
+The key is not whether the task is "knowledge work" or "tool work."
+The key is whether you can define:
+
+- a command or hook to run
+- a score or evaluator to judge outcomes
+- a mutation grammar for what should change next
+
+If that exists, Spark can usually run a self-improving loop on it.
+Domain chips are the main way to modularize that logic without turning the kernel into a giant framework.
+
+In practice, a chip can teach Spark how to:
+
+- score a domain-specific candidate
+- suggest the next bounded experiment
+- turn outcomes into promoted doctrine or boundaries
+- render a watchtower surface for operators
+
+That is why Spark can be about more than reasoning alone.
+With the right chip, it can get better at real tasks too.
+
 ## Optional Integrations
 
 The core loop does not require Spark Swarm, domain chips, Obsidian, or self-edit.
@@ -201,6 +236,20 @@ Plain-English translations:
 - `advisory`: "give the model only the few local facts that matter"
 - `chips`: "keep domain-specific logic in a separate module or repo"
 - `collective`: "export portable lessons that another Spark-style system can ingest"
+
+## Building On Top Of Spark
+
+If you want to build a modular system on top of Spark:
+
+1. define the task you want to improve
+2. define the command or hook Spark should run
+3. define the metric that decides better or worse
+4. define the mutations the system is allowed to explore
+5. put the domain-specific logic into a chip repo instead of the kernel
+
+That applies whether the chip is for research, trading, content, browser automation, coding, or some internal tool workflow.
+
+For the practical chip-authoring guide, use [`docs/CHIP_AUTHORING.md`](docs/CHIP_AUTHORING.md).
 
 ## Self-Edit Flow
 
@@ -323,6 +372,7 @@ If you want a specific area:
 - self-edit workflow: [`docs/SELF_EDITING.md`](docs/SELF_EDITING.md)
 - external coding backend contract: [`docs/AGENT_BACKENDS.md`](docs/AGENT_BACKENDS.md)
 - domain-chip system: [`docs/CHIPS.md`](docs/CHIPS.md)
+- authoring chips with an LLM: [`docs/CHIP_AUTHORING.md`](docs/CHIP_AUTHORING.md)
 - chip design systems (`v1` vs `v2`): [`docs/CHIP_SYSTEMS.md`](docs/CHIP_SYSTEMS.md)
 - toy project walkthrough: [`examples/toy-project/README.md`](examples/toy-project/README.md)
 - docs publishing map: [`docs/PUBLICATION_MAP.md`](docs/PUBLICATION_MAP.md)

@@ -39,6 +39,7 @@ Current rule:
 - [`docs/ADVISORY.md`](ADVISORY.md): packet-backed model path, verifier loop, and provider execution
 - [`docs/AGENT_BACKENDS.md`](AGENT_BACKENDS.md): backend contract for external coding agents
 - [`docs/CHIPS.md`](CHIPS.md): chip contract and ownership boundary
+- [`docs/CHIP_AUTHORING.md`](CHIP_AUTHORING.md): how to design and iterate on chips with an LLM
 - [`docs/CHIP_SYSTEMS.md`](CHIP_SYSTEMS.md): chooser for `v1` vs `v2`
 - [`docs/CHIP_VALIDATION.md`](CHIP_VALIDATION.md): standard chip validation path
 - [`docs/PRESETS.md`](PRESETS.md): scaffold presets
