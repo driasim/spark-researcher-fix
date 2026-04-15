@@ -765,10 +765,10 @@ def _xcontent_cli(package_name: str) -> str:
             "poll": {{"base_engagement": 0.20, "base_reach": 0.12, "base_grok": 0.14, "dwell_bonus": 0.06, "label": "Poll", "claim": "Polls drive structured interaction data and high reply depth.", "mechanism": "Voting creates micro-commitment. Reply threads under polls generate Grok-indexable discussion.", "boundary": "Low conversion to profile follows unless paired with strong question framing.", "next_probe": "Add question hook to drive reply quality beyond vote counts."}},
         }}
         HOOK_CATALOG: dict[str, dict[str, Any]] = {{
-            "proof_founder": {{"engagement": 0.14, "reach": 0.10, "grok": 0.16, "confidence": 0.84, "label": "Proof-led founder", "claim": "Quantified proof with direct operator lessons travels well on X.", "mechanism": "Concrete numbers reduce skepticism. Founders share proof posts as reference material.", "audience": "founders", "boundary": "Weak when proof is vague or the numbers are cherry-picked."}},
-            "contrarian_take": {{"engagement": 0.12, "reach": 0.16, "grok": 0.06, "confidence": 0.72, "label": "Contrarian take", "claim": "Contrarian framing creates feed stops and quote-tweet debate loops.", "mechanism": "Novelty tension creates engagement spikes. Quote tweets amplify into new audience pockets.", "audience": "operators", "boundary": "Decays into generic hot-take writing without evidence backing."}},
-            "question_hook": {{"engagement": 0.16, "reach": 0.06, "grok": 0.12, "confidence": 0.68, "label": "Question hook", "claim": "Question hooks drive reply depth and Grok-indexable discussion threads.", "mechanism": "Open questions create lightweight commitment. Reply threads become searchable discourse.", "audience": "founders", "boundary": "Weak for action-oriented goals. Can attract low-signal replies."}},
-            "data_insight": {{"engagement": 0.10, "reach": 0.12, "grok": 0.18, "confidence": 0.80, "label": "Data insight", "claim": "Data-backed posts earn saves, bookmarks, and Grok reference surfacing.", "mechanism": "Specific data creates reference value. Bookmarks signal Grok-indexable quality.", "audience": "developers", "boundary": "Requires genuine data access. Fabricated stats destroy credibility fast."}},
+            "proof_founder": {{"engagement": 0.14, "reach": 0.10, "grok": 0.16, "confidence": 0.84, "label": "Proof-led founder", "claim": "Quantified proof with direct operator lessons travels well on X.", "mechanism": "Concrete numbers reduce skepticism. Founders share proof posts as reference material.", "audience": "founders", "boundary": "Weak when proof is vague or the numbers are cherry-picked.", "next_probe": "Stress-test the proof hook against adjacent audiences and weaker evidence density."}},
+            "contrarian_take": {{"engagement": 0.12, "reach": 0.16, "grok": 0.06, "confidence": 0.72, "label": "Contrarian take", "claim": "Contrarian framing creates feed stops and quote-tweet debate loops.", "mechanism": "Novelty tension creates engagement spikes. Quote tweets amplify into new audience pockets.", "audience": "operators", "boundary": "Decays into generic hot-take writing without evidence backing.", "next_probe": "Check whether the same contrarian angle still works once stronger proof is added."}},
+            "question_hook": {{"engagement": 0.16, "reach": 0.06, "grok": 0.12, "confidence": 0.68, "label": "Question hook", "claim": "Question hooks drive reply depth and Grok-indexable discussion threads.", "mechanism": "Open questions create lightweight commitment. Reply threads become searchable discourse.", "audience": "founders", "boundary": "Weak for action-oriented goals. Can attract low-signal replies.", "next_probe": "Test whether tighter audience targeting improves reply quality over raw volume."}},
+            "data_insight": {{"engagement": 0.10, "reach": 0.12, "grok": 0.18, "confidence": 0.80, "label": "Data insight", "claim": "Data-backed posts earn saves, bookmarks, and Grok reference surfacing.", "mechanism": "Specific data creates reference value. Bookmarks signal Grok-indexable quality.", "audience": "developers", "boundary": "Requires genuine data access. Fabricated stats destroy credibility fast.", "next_probe": "Probe whether lighter-weight data visuals preserve saves without losing trust."}},
         }}
         AUDIENCE_BONUS: dict[str, dict[str, float]] = {{
             "founders": {{"engagement": 0.02, "reach": 0.01, "grok": 0.03}},
@@ -975,8 +975,15 @@ def _xcontent_cli(package_name: str) -> str:
         def watchtower(payload: dict[str, Any]) -> dict[str, Any]:
             summary = payload.get("summary", {{}})
             best_by_metric = summary.get("best_by_metric", {{}})
-            best_engagement = best_by_metric.get("engagement_quality_score", {{}})
-            best_grok = best_by_metric.get("grok_relevance_score", {{}})
+            def _metric_value(metric_payload: Any) -> Any:
+                if isinstance(metric_payload, dict):
+                    return metric_payload.get("value", "n/a")
+                if metric_payload in (None, ""):
+                    return "n/a"
+                return metric_payload
+
+            best_engagement = {{"value": _metric_value(best_by_metric.get("engagement_quality_score"))}}
+            best_grok = {{"value": _metric_value(best_by_metric.get("grok_relevance_score"))}}
             pages = [
                 {{"path": "07-Domains/X Content/Home.md", "content": "\\n".join(["# X Content Domain", "", "- chip: `xcontent`", "- total runs: `" + str(summary.get("run_count", 0)) + "`", "- tracked metrics: `" + str(len(best_by_metric)) + "`", "- best engagement_quality: `" + str(best_engagement.get("value", "n/a")) + "`", "- best grok_relevance: `" + str(best_grok.get("value", "n/a")) + "`", "", "## Integration Surfaces", "", "- X API: Post analytics, audience insights, trending topics", "- Grok/xAI API: Relevance scoring, trend alignment, discoverability", "", "## Views", "", "- [[07-Domains/X Content/Format Hook Matrix]]", "- [[07-Domains/X Content/Grok Relevance]]", "- [[07-Domains/X Content/Next Probes]]"])}},
                 {{"path": "07-Domains/X Content/Format Hook Matrix.md", "content": "\\n".join(["# Format + Hook Synergy Matrix", ""] + ["- `" + k + "` synergy: `" + str(v) + "`" for k, v in sorted(FORMAT_HOOK_SYNERGY.items(), key=lambda x: x[1], reverse=True)])}},

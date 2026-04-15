@@ -78,6 +78,33 @@ def test_preset_readmes_reference_chip_systems_and_relative_spark_repo() -> None
     assert "$env:PYTHONPATH='..\\spark-researcher\\src;src'" in xcontent_readme
 
 
+def test_xcontent_watchtower_handles_scalar_best_by_metric_values() -> None:
+    namespace: dict[str, object] = {}
+    exec(chip_starter._xcontent_cli("domain_chip_xcontent_test"), namespace)
+
+    watchtower = namespace["watchtower"]
+    assert callable(watchtower)
+
+    response = watchtower(
+        {
+            "summary": {
+                "run_count": 11,
+                "best_by_metric": {
+                    "engagement_quality_score": 0.95,
+                    "grok_relevance_score": 0.678,
+                },
+            }
+        }
+    )
+
+    assert isinstance(response, dict)
+    pages = response["pages"]
+    assert isinstance(pages, list)
+    home = pages[0]["content"]
+    assert "- best engagement_quality: `0.95`" in home
+    assert "- best grok_relevance: `0.678`" in home
+
+
 def test_init_chip_refuses_targets_inside_spark_repo(monkeypatch, tmp_path: Path) -> None:
     repo_root = tmp_path / "spark-researcher"
     repo_root.mkdir()
