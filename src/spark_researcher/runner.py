@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
+import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,10 +48,35 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+@contextmanager
+def locked_file(path: Path, *, timeout_seconds: float = 30.0):
+    ensure_parent(path)
+    lock_path = path.with_name(path.name + ".lock")
+    deadline = time.monotonic() + timeout_seconds
+    handle: int | None = None
+    while handle is None:
+        try:
+            handle = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"Timed out waiting for ledger lock: {lock_path}")
+            time.sleep(0.05)
+    try:
+        os.write(handle, str(os.getpid()).encode("ascii", errors="ignore"))
+        yield
+    finally:
+        os.close(handle)
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
     ensure_parent(path)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, sort_keys=True) + "\n")
+    with locked_file(path):
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
 def make_run_id(kind: str) -> str:
