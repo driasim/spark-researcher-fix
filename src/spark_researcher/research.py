@@ -16,6 +16,27 @@ from .safe_url import safe_urlopen
 from .tracing import start_trace
 from .verifier import execute_with_verifier
 
+INVISIBLE_UNICODE_CHARS = {
+    "\u200b": "ZERO WIDTH SPACE",
+    "\u200c": "ZERO WIDTH NON-JOINER",
+    "\u200d": "ZERO WIDTH JOINER",
+    "\u2060": "WORD JOINER",
+    "\ufeff": "BYTE ORDER MARK",
+    "\u202a": "LEFT-TO-RIGHT EMBEDDING",
+    "\u202b": "RIGHT-TO-LEFT EMBEDDING",
+    "\u202c": "POP DIRECTIONAL FORMATTING",
+    "\u202d": "LEFT-TO-RIGHT OVERRIDE",
+    "\u202e": "RIGHT-TO-LEFT OVERRIDE",
+}
+STORED_PROMPT_INJECTION_PATTERNS = (
+    ("instruction-override", re.compile(r"\b(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+instructions\b", re.I)),
+    ("system-prompt-override", re.compile(r"\b(system|developer)\s+(prompt|message|instruction)s?\b.*\b(override|replace|ignore)\b", re.I)),
+    ("hidden-html", re.compile(r"<!--|<\s*(?:div|span)[^>]*(?:display\s*:\s*none|visibility\s*:\s*hidden)", re.I)),
+    ("secret-exfiltration", re.compile(r"\b(curl|wget|fetch)\b.*\b(\.env|secret|token|api[_-]?key|password)\b", re.I)),
+    ("secret-file-request", re.compile(r"\b(read|open|print|cat|get-content)\b.*(\.env|secrets\.local\.json|id_rsa|\.ssh|api[_-]?key)\b", re.I)),
+    ("private-key", re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----", re.I)),
+)
+
 
 def _now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
@@ -92,8 +113,30 @@ def _domain_from_url(url: str) -> str:
     return netloc
 
 
+def scan_untrusted_research_text(value: Any) -> list[str]:
+    text = str(value or "")
+    findings: list[str] = []
+    for char, name in INVISIBLE_UNICODE_CHARS.items():
+        if char in text:
+            findings.append(f"invisible-unicode: U+{ord(char):04X} {name}")
+    for category, pattern in STORED_PROMPT_INJECTION_PATTERNS:
+        if pattern.search(text):
+            findings.append(category)
+    return findings
+
+
+def sanitize_untrusted_research_text(value: Any) -> str:
+    text = str(value or "")
+    for char, name in INVISIBLE_UNICODE_CHARS.items():
+        text = text.replace(char, f"[blocked invisible unicode U+{ord(char):04X} {name}]")
+    for category, pattern in STORED_PROMPT_INJECTION_PATTERNS:
+        if pattern.search(text):
+            return f"[blocked stored prompt-injection content: {category}]"
+    return text
+
+
 def _bounded_research_text(value: Any, *, limit: int) -> str:
-    compact = " ".join(str(value or "").split())
+    compact = " ".join(sanitize_untrusted_research_text(value).split())
     compact = compact if len(compact) <= limit else compact[: limit - 3].rstrip() + "..."
     return escape(compact, quote=False)
 
