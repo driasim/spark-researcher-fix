@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from spark_researcher.adapters.exec import _default_command, _resolve_command, execute_advisory, execution_status
+from spark_researcher.adapters.exec import _default_command, _expand_command_template, _resolve_command, execute_advisory, execution_status
 
 
 class AdapterExecTests(unittest.TestCase):
@@ -29,6 +29,21 @@ class AdapterExecTests(unittest.TestCase):
         codex = next(item for item in status["providers"] if item["model"] == "codex")
         self.assertEqual(codex["source"], "default")
         self.assertTrue(codex["configured"])
+
+    def test_expand_command_template_rejects_unknown_placeholders(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, r"\{malicious_path\}"):
+            _expand_command_template(
+                ["codex", "exec", "--json-out", "{response_path}", "--extra", "{malicious_path}"],
+                {"response_path": "response.json"},
+            )
+
+    def test_expand_command_template_allows_known_placeholders_inside_args(self) -> None:
+        command = _expand_command_template(
+            ["codex", "exec", "--json-out={response_path}"],
+            {"response_path": "response.json"},
+        )
+
+        self.assertEqual(command, ["codex", "exec", "--json-out=response.json"])
 
     def test_execute_advisory_dry_run_uses_default_codex_command(self) -> None:
         advisory = {

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -19,6 +20,8 @@ ENV_KEYS = {
     "openclaw": "SPARK_RESEARCHER_ADAPTER_OPENCLAW_COMMAND",
     "generic": "SPARK_RESEARCHER_ADAPTER_GENERIC_COMMAND",
 }
+
+_PLACEHOLDER_RE = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 
 
 def _now_slug() -> str:
@@ -64,6 +67,21 @@ def _resolve_command(model: str, command_override: list[str] | None = None) -> l
         return parts
     raw = os.environ.get(ENV_KEYS[model], "").strip()
     return shlex.split(raw, posix=False) if raw else _default_command(model)
+
+
+def _expand_command_template(command: list[str], replacements: dict[str, str]) -> list[str]:
+    allowed = set(replacements)
+    expanded: list[str] = []
+    for part in command:
+        unknown = sorted({match.group(1) for match in _PLACEHOLDER_RE.finditer(part)} - allowed)
+        if unknown:
+            names = ", ".join(f"{{{name}}}" for name in unknown)
+            raise RuntimeError(f"Execution command uses unsupported template placeholder(s): {names}.")
+        next_part = str(part)
+        for name, value in replacements.items():
+            next_part = next_part.replace(f"{{{name}}}", value)
+        expanded.append(next_part)
+    return expanded
 
 
 def execution_status() -> dict[str, Any]:
@@ -129,13 +147,15 @@ def execute_advisory(
     request_path.write_text(json.dumps(advisory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     system_prompt_path.write_text(system_prompt, encoding="utf-8")
     user_prompt_path.write_text(user_prompt, encoding="utf-8")
-    expanded = [
-        part.replace("{system_prompt_path}", str(system_prompt_path))
-        .replace("{user_prompt_path}", str(user_prompt_path))
-        .replace("{request_path}", str(request_path))
-        .replace("{response_path}", str(response_path))
-        for part in command
-    ]
+    expanded = _expand_command_template(
+        command,
+        {
+            "system_prompt_path": str(system_prompt_path),
+            "user_prompt_path": str(user_prompt_path),
+            "request_path": str(request_path),
+            "response_path": str(response_path),
+        },
+    )
     if dry_run:
         trace.finish(status="ok", attributes={"mode": "dry_run", "command": expanded})
         return {
