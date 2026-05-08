@@ -495,4 +495,4 @@ Spark Researcher is intentionally opinionated:
 
 For the full documentation map, use [`docs/README.md`](docs/README.md).
 For the safe public-vs-reference split, use [`docs/PUBLICATION_MAP.md`](docs/PUBLICATION_MAP.md).
-The project is released under the [MIT License](LICENSE).
+The project is released under the [GNU Affero General Public License v3.0 only](LICENSE).
