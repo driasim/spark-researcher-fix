@@ -431,8 +431,7 @@ def invoke_chip_hook(
         env=_build_hook_env(context),
         capture_output=True,
         text=True,
-        encoding="utf-8",
-        errors="replace",
+        timeout=300,
     )
     log_path.write_text(
         json.dumps(
