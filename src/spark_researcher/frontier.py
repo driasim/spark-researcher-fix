@@ -150,7 +150,7 @@ def frontier_suggest(config_path: Path, command_name: str, *, rows: list[dict[st
     advisory = build_advisory(config_path, task, model=str(spec.get("model", "generic")), limit=3, domain=str(context.manifest.get("domain", "generic")))
     try:
         response = execute_advisory(runtime_root, advisory=advisory, model=str(spec.get("model", "generic")), dry_run=False)
-    except Exception as exc:
+    except (RuntimeError, OSError) as exc:
         trace.finish(status="error", attributes={"error": str(exc)})
         return {"source": "frontier", "suggestion_count": 0, "suggestions": [], "reasons": [f"Frontier execution unavailable: {exc}"]}
     payload = response.get("response", {})
