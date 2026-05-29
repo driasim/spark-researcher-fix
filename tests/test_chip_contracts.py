@@ -284,6 +284,39 @@ def test_invoke_chip_hook_uses_bounded_utf8_subprocess(monkeypatch: pytest.Monke
     assert captured["kwargs"]["errors"] == "replace"
 
 
+def test_invoke_chip_hook_failure_returns_public_safe_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    config_path = _write_chip_fixture(
+        tmp_path / "chip",
+        response_payload={
+            "documents": [
+                {
+                    "kind": "benchmark_evidence",
+                    "title": "Unused",
+                    "content": "# Unused",
+                }
+            ]
+        },
+    )
+
+    def fake_run(_command: list[str], **_kwargs: object) -> SimpleNamespace:
+        return SimpleNamespace(returncode=2, stdout="token=abc123", stderr="secret=should-not-appear")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError) as error:
+        invoke_chip_hook(
+            config_path,
+            "packets",
+            {"ledger_rows": [], "outcomes": [], "documents_root": str(tmp_path / "docs")},
+        )
+
+    message = str(error.value)
+    assert "exit code 2" in message
+    assert "local chip hook log" in message
+    assert "secret=should-not-appear" not in message
+    assert "token=abc123" not in message
+
+
 def test_chip_validation_rejects_missing_local_hook_paths(tmp_path: Path) -> None:
     chip_root = tmp_path / "chip"
     chip_root.mkdir(parents=True, exist_ok=True)

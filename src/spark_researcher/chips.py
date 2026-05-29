@@ -385,6 +385,13 @@ def _build_hook_env(context: ChipContext) -> dict[str, str]:
     return env
 
 
+def _public_hook_failure_detail(hook: str, returncode: int) -> str:
+    return (
+        f"Chip hook `{hook}` failed with exit code {returncode}. "
+        "Details were written to the local chip hook log."
+    )
+
+
 def invoke_chip_hook(
     config_path: Path,
     hook: str,
@@ -454,7 +461,7 @@ def invoke_chip_hook(
         encoding="utf-8",
     )
     if result.returncode != 0:
-        raise RuntimeError(f"Chip hook `{hook}` failed with exit code {result.returncode}: {result.stderr.strip()}")
+        raise RuntimeError(_public_hook_failure_detail(hook, result.returncode))
     if not output_path.exists():
         raise RuntimeError(f"Chip hook `{hook}` did not produce an output file: {output_path}")
     response = json.loads(output_path.read_text(encoding="utf-8-sig"))
