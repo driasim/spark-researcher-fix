@@ -25,3 +25,11 @@ def test_locked_file_times_out_when_lock_is_held(tmp_path: Path) -> None:
             raise AssertionError("lock should not be acquired")
     except TimeoutError as exc:
         assert "runs.jsonl.lock" in str(exc)
+
+
+def test_read_jsonl_skips_malformed_rows(tmp_path: Path) -> None:
+    path = tmp_path / "ledger" / "runs.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('{"run_id":"one"}\nnot-json\n{"run_id":"two"}\n', encoding="utf-8")
+
+    assert [row["run_id"] for row in read_jsonl(path)] == ["one", "two"]
