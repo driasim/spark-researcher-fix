@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
+
+import pytest
 
 from spark_researcher import candidates, runner
 from spark_researcher.config import load_config
@@ -131,6 +134,22 @@ def test_trace_status_skips_malformed_jsonl_rows(tmp_path: Path) -> None:
     assert status["research_signals"]["research_retry_count"] == 1
     assert status["research_signals"]["citation_check_count"] == 1
     assert status["research_signals"]["citation_mismatch_count"] == 1
+
+
+def test_trace_appends_use_locked_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    locked_paths: list[Path] = []
+
+    @contextmanager
+    def fake_lock(path: Path):
+        locked_paths.append(path)
+        yield
+
+    monkeypatch.setattr("spark_researcher.runner.locked_file", fake_lock)
+
+    recorder = start_trace(tmp_path, kind="advisory_research", name="retry")
+    recorder.event("citation_check")
+
+    assert locked_paths == [recorder.path, tmp_path / "artifacts" / "traces" / "index.jsonl", recorder.path]
 
 
 def test_load_config_falls_back_for_invalid_optional_numeric_values(tmp_path: Path) -> None:
