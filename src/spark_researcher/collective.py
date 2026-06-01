@@ -44,7 +44,12 @@ def _parse_frontmatter(raw: str) -> dict[str, Any]:
         if line.strip() == "---":
             break
         if line.startswith("  - ") and current_key is not None:
-            payload.setdefault(current_key, [])
+            existing = payload.get(current_key)
+            if not isinstance(existing, list):
+                # Convert scalar to list before appending list items,
+                # preventing AttributeError when a list continuation
+                # follows a scalar value.
+                payload[current_key] = [existing] if existing is not None else []
             payload[current_key].append(line[4:].strip())
             continue
         if ":" not in line:
