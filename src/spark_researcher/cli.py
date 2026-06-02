@@ -11,7 +11,7 @@ from .candidates import append_suggestions, run_autoloop, run_continuous_autoloo
 from .chip_starter import init_chip, normalize_chip_name, resolve_chip_target
 from .chips import chip_status, chip_validation
 from .collective import absorb, collective_readiness, collective_status, publish_latest, sync_local_collective, write_spark_swarm_collective_payload_from_latest
-from .config import intent_policy, load_config, memory_policy, save_config, self_edit_policy, update_intent_policy, update_memory_policy, update_self_edit_policy
+from .config import intent_policy, load_config, memory_policy, public_config_path, save_config, self_edit_policy, update_intent_policy, update_memory_policy, update_self_edit_policy
 from .failures import surprise_status
 from .intent import build_intent_brief
 from .line_budget import build_line_budget
@@ -46,6 +46,39 @@ def _positive_int(value: str) -> int:
     if parsed < 1:
         raise argparse.ArgumentTypeError("value must be a positive integer")
     return parsed
+
+
+def _action_requires_config(args: argparse.Namespace) -> bool:
+    action = getattr(args, "action", None)
+    if action in {None, "init", "line-budget", "optimizer", "failures"}:
+        return False
+    if action == "advisory":
+        return getattr(args, "advisory_command", None) in {None, "build", "execute"}
+    if action == "chips":
+        return getattr(args, "chips_command", None) != "init"
+    if action == "collective":
+        return getattr(args, "collective_command", None) == "spark-swarm-payload"
+    if action == "self-edit":
+        return getattr(args, "self_edit_command", None) in {"propose", "policy", "apply"}
+    return True
+
+
+def _require_config_file(config_path: Path) -> None:
+    if config_path.exists():
+        return
+    print_json(
+        {
+            "ok": False,
+            "error_code": "config_file_not_found",
+            "error": "Config file not found.",
+            "config_path": public_config_path(config_path),
+            "next_action": (
+                "Run `spark-researcher init --path . --preset toy --project-name <name>` "
+                "or pass --config to an existing spark-researcher.project.json file."
+            ),
+        }
+    )
+    raise SystemExit(1)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -524,6 +557,8 @@ def main() -> None:
         print_json(budget)
         return
     config_path = resolve_config_path(getattr(args, "config", None))
+    if _action_requires_config(args):
+        _require_config_file(config_path)
     repo_root = config_path.parent.resolve()
     runtime_root = resolve_runtime_root(config_path)
     if args.action == "run":
