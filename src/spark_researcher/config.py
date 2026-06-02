@@ -311,7 +311,10 @@ def update_intent_policy(
 
 
 def load_config(path: Path) -> ProjectConfig:
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise SystemExit(f"Failed to parse config file {path}: {exc}") from exc
     commands = {
         name: CommandSpec(
             args=list(spec["args"]),
