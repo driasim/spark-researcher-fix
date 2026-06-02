@@ -314,7 +314,7 @@ Spark Researcher tries to stay in the middle:
 - one experiment at a time
 - visible artifacts on disk
 - memory stays local and file-first
-- self-editing is proposal-first, never silent auto-apply
+- self-editing is proposal-first and Governor-authorized, never silent auto-apply
 
 ## Main Pieces
 

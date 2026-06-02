@@ -262,6 +262,7 @@ def build_parser() -> argparse.ArgumentParser:
     self_edit_apply.add_argument("--no-push", action="store_true")
     self_edit_apply.add_argument("--branch-name")
     self_edit_apply.add_argument("--commit-message")
+    self_edit_apply.add_argument("--governor-decision", required=True)
     self_edit_status = self_edit_sub.add_parser("status")
     add_config_argument(self_edit_status)
 
@@ -492,6 +493,7 @@ def _handle_self_edit(args: argparse.Namespace, *, config_path: Path) -> None:
                 push_override=push_override,
                 branch_name_override=args.branch_name,
                 commit_message_override=args.commit_message,
+                governor_decision_path=Path(args.governor_decision),
             )
         )
         return
