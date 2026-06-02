@@ -185,7 +185,13 @@ def apply_mutations(workspace_root: Path, config: ProjectConfig, mutations: dict
     lookup = mutation_lookup(config)
     for name, value in mutations.items():
         if name not in lookup:
-            raise KeyError(f"Unknown mutable parameter: {name}")
+            known = ", ".join(sorted(lookup))
+            if known:
+                raise KeyError(f"Unknown mutable parameter: {name}. Known mutable parameters: {known}.")
+            raise KeyError(
+                f"Unknown mutable parameter: {name}. "
+                "No mutable parameters are defined; add entries under `mutable_parameters` in the project config."
+            )
         spec = lookup[name]
         target_path = (workspace_root / spec.file).resolve()
         text = target_path.read_text(encoding="utf-8-sig")

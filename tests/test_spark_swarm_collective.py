@@ -705,6 +705,20 @@ def test_sync_local_collective_rebuild_uses_bounded_timeout(tmp_path: Path, monk
     assert all(call["check"] is False for call in calls)
 
 
+def test_sync_local_collective_missing_repo_names_sibling_checkout(tmp_path: Path) -> None:
+    repo_root = tmp_path / "spark-researcher"
+    repo_root.mkdir()
+
+    with pytest.raises(RuntimeError) as error:
+        collective_module.sync_local_collective(repo_root, tmp_path / "runtime")
+
+    message = str(error.value)
+    assert "Collective repo not found" in message
+    assert "autoresearch-collective" in message
+    assert "sibling" in message
+    assert "Clone or place" in message
+
+
 def test_publish_latest_normalizes_non_collective_verdicts(tmp_path: Path) -> None:
     repo_root = tmp_path
     _write_frontmatter_manifest(repo_root)
