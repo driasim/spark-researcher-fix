@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import UTC, datetime
 from html import escape, unescape
@@ -15,6 +16,8 @@ from .memory import record_episode, write_working_memory
 from .paths import advisory_root
 from .safe_url import safe_urlopen
 from .tracing import start_trace
+logger = logging.getLogger(__name__)
+
 from .verifier import execute_with_verifier
 
 INVISIBLE_UNICODE_CHARS = {
@@ -53,7 +56,8 @@ def _bounded_web_results(query: str, *, limit: int = 5) -> list[dict[str, str]]:
     try:
         with safe_urlopen(request, timeout=6) as response:
             page = response.read().decode("utf-8", errors="replace")
-    except (URLError, OSError, ValueError):
+    except (URLError, OSError, ValueError) as exc:
+        logger.warning("Bounded web search failed for %r: %s", query, exc)
         return []
     links = re.findall(r'<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', page, flags=re.IGNORECASE | re.DOTALL)
     snippets = re.findall(r'result__snippet[^>]*>(.*?)</[^>]+>', page, flags=re.IGNORECASE | re.DOTALL)
