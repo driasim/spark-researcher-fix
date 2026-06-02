@@ -7,6 +7,13 @@ import shutil
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
+
+def _loads_json_file(path: Path) -> dict:
+    try:
+        return _loads_json_file(path)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {path}") from exc
 from typing import Any
 
 from .beliefs import build_beliefs

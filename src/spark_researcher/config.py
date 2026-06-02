@@ -5,6 +5,13 @@ import re
 from dataclasses import asdict
 from dataclasses import dataclass, field
 from pathlib import Path
+
+
+def _loads_json_file(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {path}") from exc
 from typing import Any
 
 SECRET_PATH_PATTERN = re.compile(r"(?:sk-[a-z0-9_-]+|api[-_]?key|credential|password|secret|token)", re.IGNORECASE)
@@ -324,7 +331,7 @@ def update_intent_policy(
 
 def load_config(path: Path) -> ProjectConfig:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        payload = _loads_json_file(path)
     except FileNotFoundError as exc:
         raise SystemExit(f"Config file not found: {public_config_path(path)}") from exc
     except json.JSONDecodeError as exc:
