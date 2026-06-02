@@ -28,7 +28,12 @@ def load_queue_trials(config_path: Path) -> list[CandidateTrial]:
     path = queue_path_for_config(config_path)
     if not path.exists():
         return []
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(payload, dict):
+        return []
     items = payload.get("candidate_trials", [])
     if not isinstance(items, list):
         return []

@@ -17,7 +17,11 @@ def now_iso() -> str:
 def read_state(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def write_state(path: Path, payload: dict[str, Any]) -> None:
