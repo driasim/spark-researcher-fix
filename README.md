@@ -72,7 +72,7 @@ If you are Claude Code, Codex, or another LLM agent reading this repo:
 
 ## Install
 
-Spark Researcher requires Python `3.10+`.
+Spark Researcher requires Python `3.11+`.
 
 If you want the bundled demo project and docs exactly as they ship in this repo:
 

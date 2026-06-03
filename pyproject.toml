@@ -7,7 +7,7 @@ name = "spark-researcher"
 version = "0.1.0"
 description = "Lightweight autoresearch with guarded self-improvement, simple memory, and Obsidian observability."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 dependencies = []
 
