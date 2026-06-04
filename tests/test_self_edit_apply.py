@@ -6,9 +6,13 @@ from pathlib import Path
 
 import pytest
 
-HARNESS_CORE_SRC = Path.home() / ".spark" / "modules" / "spark-harness-core" / "source" / "src"
-if HARNESS_CORE_SRC.exists() and str(HARNESS_CORE_SRC) not in sys.path:
-    sys.path.insert(0, str(HARNESS_CORE_SRC))
+for HARNESS_CORE_SRC in (
+    Path(__file__).resolve().parents[2] / "spark-harness-core" / "src",
+    Path.home() / ".spark" / "modules" / "spark-harness-core" / "source" / "src",
+):
+    if HARNESS_CORE_SRC.exists() and str(HARNESS_CORE_SRC) not in sys.path:
+        sys.path.insert(0, str(HARNESS_CORE_SRC))
+        break
 
 from spark_harness_core import HarnessKernel, evidence_ref
 from spark_researcher.config import CommandSpec, MetricSpec, ProjectConfig, save_config

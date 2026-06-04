@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request
 
 from .adapters import adapter_request
+from .authority import require_advisory_execution_authority
 from .memory import record_episode, write_working_memory
 from .paths import advisory_root
 from .safe_url import safe_urlopen
@@ -216,13 +217,26 @@ def execute_with_research(
     model: str,
     command_override: list[str] | None = None,
     dry_run: bool = False,
+    governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    authority = None if dry_run else require_advisory_execution_authority(governor_decision)
     trace = start_trace(
         runtime_root,
         kind="advisory_research",
         name=model,
         parent_trace_id=str(advisory.get("trace_id") or "") or None,
-        attributes={"model": model, "dry_run": dry_run},
+        attributes={
+            "model": model,
+            "dry_run": dry_run,
+            "authority": {
+                "allowed": True,
+                "decision_id": authority.get("decision_id"),
+                "ledger_id": authority.get("ledger_id"),
+                "tool_name": authority.get("tool_name"),
+            }
+            if authority
+            else {"mode": "dry_run"},
+        },
     )
     if dry_run:
         packet = execute_with_verifier(
@@ -231,6 +245,7 @@ def execute_with_research(
             model=model,
             command_override=command_override,
             dry_run=True,
+            governor_decision=governor_decision,
         )
         packet["steps"] = list(dict.fromkeys([*list(packet.get("steps", [])), "conditional_research_retry"]))
         packet["research_trace_id"] = trace.trace_id
@@ -243,6 +258,7 @@ def execute_with_research(
         model=model,
         command_override=command_override,
         dry_run=False,
+        governor_decision=governor_decision,
     )
     if str(initial.get("status") or "") != "research_needed":
         trace.finish(status="ok", attributes={"decision": initial.get("decision", initial.get("status", "unknown"))})
@@ -310,6 +326,7 @@ def execute_with_research(
         model=model,
         command_override=command_override,
         dry_run=False,
+        governor_decision=governor_decision,
     )
     if isinstance(followup, dict):
         followup["initial_research_packet"] = initial

@@ -38,6 +38,12 @@ def add_config_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", default="spark-researcher.project.json")
 
 
+def _load_governor_decision(path: str | None) -> dict | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="spark-researcher")
     sub = parser.add_subparsers(dest="action")
@@ -113,6 +119,7 @@ def build_parser() -> argparse.ArgumentParser:
     advisory_execute_parser.add_argument("--command", action="append")
     advisory_execute_parser.add_argument("--dry-run", action="store_true")
     advisory_execute_parser.add_argument("--no-verify", action="store_true")
+    advisory_execute_parser.add_argument("--governor-decision")
     advisory_log_parser = advisory_sub.add_parser("log")
     add_config_argument(advisory_log_parser)
     advisory_log_parser.add_argument("--task", required=True)
@@ -286,6 +293,7 @@ def _handle_advisory(args: argparse.Namespace, *, config_path: Path, runtime_roo
     if args.advisory_command == "execute":
         advisory = build_advisory(config_path, args.task, model=args.model, limit=args.limit, domain=args.domain)
         executor = execute_advisory if args.no_verify else execute_with_research
+        governor_decision = _load_governor_decision(args.governor_decision)
         print_json(
             executor(
                 runtime_root,
@@ -293,6 +301,7 @@ def _handle_advisory(args: argparse.Namespace, *, config_path: Path, runtime_roo
                 model=args.model,
                 command_override=args.command,
                 dry_run=args.dry_run,
+                governor_decision=governor_decision,
             )
         )
         return
