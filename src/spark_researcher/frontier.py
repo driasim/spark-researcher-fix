@@ -178,7 +178,7 @@ def frontier_suggest(
             dry_run=False,
             governor_decision=governor_decision,
         )
-    except Exception as exc:
+    except (RuntimeError, OSError) as exc:
         trace.finish(status="error", attributes={"error": str(exc)})
         return {"source": "frontier", "suggestion_count": 0, "suggestions": [], "reasons": [f"Frontier execution unavailable: {exc}"]}
     payload = response.get("response", {})
