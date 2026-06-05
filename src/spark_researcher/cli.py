@@ -102,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--candidate-id")
     run_parser.add_argument("--set", action="append")
     run_parser.add_argument("--dry-run", action="store_true")
+    run_parser.add_argument("--governor-decision")
     run_parser.add_argument("--memory-governor-decision")
 
     loop_parser = sub.add_parser("loop")
@@ -109,6 +110,7 @@ def build_parser() -> argparse.ArgumentParser:
     loop_parser.add_argument("--command", dest="project_command", required=True)
     loop_parser.add_argument("--limit", type=int)
     loop_parser.add_argument("--dry-run", action="store_true")
+    loop_parser.add_argument("--governor-decision")
 
     autoloop_parser = sub.add_parser("autoloop")
     add_config_argument(autoloop_parser)
@@ -122,6 +124,7 @@ def build_parser() -> argparse.ArgumentParser:
     autoloop_parser.add_argument("--max-passes", type=_positive_int)
     autoloop_parser.add_argument("--max-seconds", type=int)
     autoloop_parser.add_argument("--stop-file")
+    autoloop_parser.add_argument("--governor-decision")
 
     candidates_parser = sub.add_parser("candidates")
     candidates_sub = candidates_parser.add_subparsers(dest="candidates_command")
@@ -614,12 +617,21 @@ def main() -> None:
                 trial=trial,
                 overrides=parse_overrides(args.set),
                 dry_run=args.dry_run,
+                governor_decision=_load_governor_decision(args.governor_decision),
                 memory_governor_decision=_load_governor_decision(args.memory_governor_decision),
             )
         )
         return
     if args.action == "loop":
-        print_json(run_loop(config_path, args.project_command, dry_run=args.dry_run, limit=args.limit))
+        print_json(
+            run_loop(
+                config_path,
+                args.project_command,
+                dry_run=args.dry_run,
+                limit=args.limit,
+                governor_decision=_load_governor_decision(args.governor_decision),
+            )
+        )
         return
     if args.action == "autoloop":
         runner = run_continuous_autoloop if args.continuous else run_autoloop
@@ -628,6 +640,7 @@ def main() -> None:
             "suggest_limit": args.suggest_limit,
             "dry_run": args.dry_run,
             "apply_suggestions": not args.no_apply_suggestions,
+            "governor_decision": _load_governor_decision(args.governor_decision),
         }
         if args.continuous:
             kwargs["pause_seconds"] = args.pause_seconds

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -12,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .authority import require_run_execution_authority
 from .chips import invoke_chip_hook
 from .collective import write_spark_swarm_collective_payload
 from .config import CandidateTrial, ProjectConfig, intent_policy, load_config, mutation_lookup, resolve_project_root, trial_applies_to_command
@@ -31,6 +33,47 @@ class CommandResult:
 
 def now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+def run_authority_args_path(
+    config_path: Path,
+    command_name: str,
+    *,
+    mode: str = "once",
+    candidate_id: str | None = None,
+    overrides: dict[str, str] | None = None,
+    limit: int | None = None,
+    rounds: int | None = None,
+    max_passes: int | None = None,
+) -> str:
+    payload = {
+        "candidate_id": candidate_id or "baseline",
+        "command_name": command_name,
+        "config_path": str(config_path.resolve()),
+        "limit": limit,
+        "max_passes": max_passes,
+        "mode": mode,
+        "overrides": overrides or {},
+        "rounds": rounds,
+    }
+    digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    return (
+        f"researcher-run://{config_path.resolve().as_posix()}"
+        f"#mode={mode};command={command_name};candidate={payload['candidate_id']};binding={digest}"
+    )
+
+
+def _authority_summary(verification: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema_version": verification.get("schema_version"),
+        "allowed": bool(verification.get("allowed")),
+        "decision_id": verification.get("decision_id"),
+        "turn_id": verification.get("turn_id"),
+        "tool_name": verification.get("tool_name"),
+        "capability_id": verification.get("capability_id"),
+        "authorization_decision_id": verification.get("authorization_decision_id"),
+        "ledger_id": verification.get("ledger_id"),
+    }
 
 
 def ensure_parent(path: Path) -> None:
@@ -436,12 +479,26 @@ def run_once(
     trial: CandidateTrial | None = None,
     overrides: dict[str, str] | None = None,
     dry_run: bool = False,
+    governor_decision: dict[str, Any] | None = None,
+    authority_args_path: str | None = None,
     memory_governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = load_config(config_path)
     runtime_root = resolve_runtime_root(config_path)
     project_root = resolve_project_root(config_path, config)
     command_spec = config.commands[command_name]
+    run_authority = None
+    if not dry_run:
+        run_authority = require_run_execution_authority(
+            governor_decision,
+            args_path=authority_args_path
+            or run_authority_args_path(
+                config_path,
+                command_name,
+                candidate_id=trial.candidate_id if trial else None,
+                overrides=overrides,
+            ),
+        )
     trace = start_trace(
         runtime_root,
         kind="run",
@@ -510,6 +567,8 @@ def run_once(
             applied_mutations,
             chip_result=chip_result,
         )
+        if run_authority is not None:
+            record["authority"] = _authority_summary(run_authority)
         record["trace_id"] = trace.trace_id
         record["trace_path"] = str(trace.path)
         if dry_run:
@@ -567,15 +626,30 @@ def parse_overrides(items: list[str] | None) -> dict[str, str]:
     return overrides
 
 
-def run_loop(config_path: Path, command_name: str, *, dry_run: bool = False, limit: int | None = None) -> dict[str, Any]:
+def run_loop(
+    config_path: Path,
+    command_name: str,
+    *,
+    dry_run: bool = False,
+    limit: int | None = None,
+    governor_decision: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     config = load_config(config_path)
     requested_limit = limit or config.guardrails.max_loop_iterations
     max_iterations = min(requested_limit, config.guardrails.max_loop_iterations)
+    authority_args_path = run_authority_args_path(config_path, command_name, mode="loop", limit=max_iterations)
     consecutive_discards = 0
     results: list[dict[str, Any]] = []
     pending_trials = [trial for trial in config.candidate_trials if trial_applies_to_command(trial, command_name)]
     for trial in pending_trials[:max_iterations]:
-        record = run_once(config_path, command_name, trial=trial, dry_run=dry_run)
+        record = run_once(
+            config_path,
+            command_name,
+            trial=trial,
+            dry_run=dry_run,
+            governor_decision=governor_decision,
+            authority_args_path=authority_args_path,
+        )
         results.append(record)
         if record["verdict"] == "improved":
             consecutive_discards = 0

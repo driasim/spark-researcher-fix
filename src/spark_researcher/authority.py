@@ -24,6 +24,12 @@ CHIP_CREATE_MUTATION_CLASS = "creates_chip"
 CHIP_CREATE_ACTION_TYPE = "create_domain_chip"
 CHIP_CREATE_CAPABILITY_ID = f"capability:{CHIP_CREATE_OWNER_SYSTEM}:{CHIP_CREATE_TOOL_NAME}"
 
+RUN_EXECUTION_TOOL_NAME = "researcher.run"
+RUN_EXECUTION_OWNER_SYSTEM = "spark-researcher"
+RUN_EXECUTION_MUTATION_CLASS = "writes_files"
+RUN_EXECUTION_ACTION_TYPE = "edit_file"
+RUN_EXECUTION_CAPABILITY_ID = f"capability:{RUN_EXECUTION_OWNER_SYSTEM}:{RUN_EXECUTION_TOOL_NAME}"
+
 
 def _harness_core_source_candidates() -> list[Path]:
     candidates: list[Path] = []
@@ -119,4 +125,61 @@ def require_chip_create_authority(
         reasons = [str(item) for item in verification.get("reason_codes", []) if str(item).strip()]
         reason_text = ", ".join(reasons) if reasons else "governor_authority_denied"
         raise RuntimeError("Chip creation requires GovernorDecisionV1 chip-create authority: " + reason_text)
+    return verification
+
+
+def _matching_action_args_path(
+    governor_decision: dict[str, Any] | None,
+    *,
+    capability_id: str,
+    action_type: str,
+    args_path: str,
+    action_id: str | None = None,
+) -> bool:
+    envelope = governor_decision.get("envelope") if isinstance(governor_decision, dict) else {}
+    proposed_actions = envelope.get("proposed_actions") if isinstance(envelope, dict) else []
+    if not isinstance(proposed_actions, list):
+        return False
+    for action in proposed_actions:
+        if not isinstance(action, dict):
+            continue
+        if action.get("capability_id") != capability_id:
+            continue
+        if action.get("action_type") != action_type:
+            continue
+        if action_id is not None and str(action.get("action_id") or "") != action_id:
+            continue
+        args_ref = action.get("args_ref") if isinstance(action.get("args_ref"), dict) else {}
+        if str(args_ref.get("path_or_uri") or "") == args_path:
+            return True
+    return False
+
+
+def require_run_execution_authority(
+    governor_decision: dict[str, Any] | None,
+    *,
+    args_path: str,
+    action_id: str | None = None,
+) -> dict[str, Any]:
+    verifier = _load_verify_governor_tool_authority()
+    verification = verifier(
+        governor_decision,
+        tool_name=RUN_EXECUTION_TOOL_NAME,
+        owner_system=RUN_EXECUTION_OWNER_SYSTEM,
+        mutation_class=RUN_EXECUTION_MUTATION_CLASS,
+        action_id=action_id,
+        require_pre_execution_ledger=True,
+    )
+    if verification.get("allowed") and not _matching_action_args_path(
+        governor_decision,
+        capability_id=RUN_EXECUTION_CAPABILITY_ID,
+        action_type=RUN_EXECUTION_ACTION_TYPE,
+        args_path=args_path,
+        action_id=action_id,
+    ):
+        verification = {**verification, "allowed": False, "reason_codes": ["governor_action_args_path_mismatch"]}
+    if not verification.get("allowed"):
+        reasons = [str(item) for item in verification.get("reason_codes", []) if str(item).strip()]
+        reason_text = ", ".join(reasons) if reasons else "governor_authority_denied"
+        raise RuntimeError("Researcher run requires GovernorDecisionV1 run authority: " + reason_text)
     return verification

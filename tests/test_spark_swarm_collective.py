@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 import spark_researcher.collective as collective_module
+from runner_governor import run_governor_decision
 from spark_researcher.collective import (
     _parse_frontmatter,
     absorb,
@@ -19,7 +20,7 @@ from spark_researcher.collective import (
 )
 from spark_researcher.config import load_config
 from spark_researcher.paths import ledger_path, resolve_runtime_root, spark_swarm_collective_payload_path
-from spark_researcher.runner import run_once
+from spark_researcher.runner import run_authority_args_path, run_once
 
 
 def _write_config(repo_root: Path) -> Path:
@@ -46,6 +47,10 @@ def _write_config(repo_root: Path) -> Path:
     }
     config_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return config_path
+
+
+def _run_governor(config_path: Path, command_name: str = "train") -> dict:
+    return run_governor_decision(run_authority_args_path(config_path, command_name))
 
 
 def _write_manifest(repo_root: Path) -> None:
@@ -481,7 +486,7 @@ def test_run_once_writes_spark_swarm_collective_payload(tmp_path: Path) -> None:
     (repo_root / "train.py").write_text("print('score=1.5')\n", encoding="utf-8")
     config_path = _write_config(repo_root)
 
-    record = run_once(config_path, "train")
+    record = run_once(config_path, "train", governor_decision=_run_governor(config_path))
 
     payload_path = spark_swarm_collective_payload_path(repo_root)
     assert payload_path.exists()
@@ -493,6 +498,41 @@ def test_run_once_writes_spark_swarm_collective_payload(tmp_path: Path) -> None:
     assert not Path(record["workspace_root"]).exists()
     assert Path(record["log_path"]).exists()
     assert Path(record["run_dir"], "result.json").exists()
+    assert record["authority"]["allowed"] is True
+
+
+def test_run_once_requires_governor_before_workspace_or_ledger(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    _write_manifest(repo_root)
+    (repo_root / "train.py").write_text("print('score=1.5')\n", encoding="utf-8")
+    config_path = _write_config(repo_root)
+    runtime_root = resolve_runtime_root(config_path)
+
+    with pytest.raises(RuntimeError, match="missing_governor_decision"):
+        run_once(config_path, "train")
+
+    assert not (runtime_root / "artifacts" / "runs").exists()
+    assert not ledger_path(runtime_root).exists()
+    assert not spark_swarm_collective_payload_path(repo_root).exists()
+
+
+def test_run_once_rejects_governor_bound_to_another_run(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    _write_manifest(repo_root)
+    (repo_root / "train.py").write_text("print('score=1.5')\n", encoding="utf-8")
+    config_path = _write_config(repo_root)
+    runtime_root = resolve_runtime_root(config_path)
+
+    with pytest.raises(RuntimeError, match="governor_action_args_path_mismatch"):
+        run_once(
+            config_path,
+            "train",
+            governor_decision=run_governor_decision("researcher-run://other#mode=once;command=train"),
+        )
+
+    assert not (runtime_root / "artifacts" / "runs").exists()
+    assert not ledger_path(runtime_root).exists()
+    assert not spark_swarm_collective_payload_path(repo_root).exists()
 
 
 def test_run_once_dry_run_does_not_persist_ledger_or_swarm_payload(tmp_path: Path) -> None:
@@ -527,7 +567,7 @@ def test_collective_readiness_tracks_latest_payload_and_capsule(tmp_path: Path, 
     assert readiness["ready"] is False
     assert "latest_metric_run_present" in readiness["missing"]
 
-    record = run_once(config_path, "train")
+    record = run_once(config_path, "train", governor_decision=_run_governor(config_path))
     assert record["status"] == "ok"
     readiness = collective_readiness(repo_root, runtime_root)
     assert readiness["checks"]["spark_swarm_payload_current"] is True, readiness
