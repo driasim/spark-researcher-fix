@@ -38,6 +38,12 @@ def _governor_decision(proposal_id: str, *, capability_id: str = SELF_EDIT_APPLY
     )
     evidence = [
         evidence_ref(
+            "fresh_user_intent",
+            "test",
+            f"Fresh owner request to apply self-edit proposal {proposal_id}.",
+            confidence=1.0,
+        ),
+        evidence_ref(
             "human_confirmation",
             "test",
             f"Governor decision is bound to self-edit proposal {proposal_id}.",

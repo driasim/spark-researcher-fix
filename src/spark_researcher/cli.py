@@ -102,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--candidate-id")
     run_parser.add_argument("--set", action="append")
     run_parser.add_argument("--dry-run", action="store_true")
+    run_parser.add_argument("--memory-governor-decision")
 
     loop_parser = sub.add_parser("loop")
     add_config_argument(loop_parser)
@@ -163,6 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     advisory_execute_parser.add_argument("--dry-run", action="store_true")
     advisory_execute_parser.add_argument("--no-verify", action="store_true")
     advisory_execute_parser.add_argument("--governor-decision")
+    advisory_execute_parser.add_argument("--memory-governor-decision")
     advisory_log_parser = advisory_sub.add_parser("log")
     add_config_argument(advisory_log_parser)
     advisory_log_parser.add_argument("--task", required=True)
@@ -229,6 +231,7 @@ def build_parser() -> argparse.ArgumentParser:
     memory_sub = memory_parser.add_subparsers(dest="memory_command")
     memory_sync = memory_sub.add_parser("sync")
     add_config_argument(memory_sync)
+    memory_sync.add_argument("--governor-decision")
     memory_search = memory_sub.add_parser("search")
     add_config_argument(memory_search)
     memory_search.add_argument("query")
@@ -249,11 +252,13 @@ def build_parser() -> argparse.ArgumentParser:
     beliefs_sub = beliefs_parser.add_subparsers(dest="beliefs_command")
     beliefs_build = beliefs_sub.add_parser("build")
     add_config_argument(beliefs_build)
+    beliefs_build.add_argument("--governor-decision")
 
     obsidian_parser = sub.add_parser("obsidian")
     obsidian_sub = obsidian_parser.add_subparsers(dest="obsidian_command")
     obsidian_build = obsidian_sub.add_parser("build")
     add_config_argument(obsidian_build)
+    obsidian_build.add_argument("--governor-decision")
 
     collective_parser = sub.add_parser("collective")
     collective_sub = collective_parser.add_subparsers(dest="collective_command")
@@ -337,8 +342,9 @@ def _handle_advisory(args: argparse.Namespace, *, config_path: Path, runtime_roo
         advisory = build_advisory(config_path, args.task, model=args.model, limit=args.limit, domain=args.domain)
         executor = execute_advisory if args.no_verify else execute_with_research
         governor_decision = _load_governor_decision(args.governor_decision)
-        print_json(
-            executor(
+        memory_governor_decision = _load_governor_decision(args.memory_governor_decision)
+        if args.no_verify:
+            result = executor(
                 runtime_root,
                 advisory=advisory,
                 model=args.model,
@@ -346,7 +352,17 @@ def _handle_advisory(args: argparse.Namespace, *, config_path: Path, runtime_roo
                 dry_run=args.dry_run,
                 governor_decision=governor_decision,
             )
-        )
+        else:
+            result = executor(
+                runtime_root,
+                advisory=advisory,
+                model=args.model,
+                command_override=args.command,
+                dry_run=args.dry_run,
+                governor_decision=governor_decision,
+                memory_governor_decision=memory_governor_decision,
+            )
+        print_json(result)
         return
     if args.advisory_command == "log":
         print_json(
@@ -412,7 +428,15 @@ def _handle_memory(args: argparse.Namespace, *, config_path: Path, repo_root: Pa
         print_json({"config_path": str(config_path), "updated": updated, "policy": memory_policy(config)})
         return
     if args.memory_command == "sync":
-        print_json(sync_memory(repo_root, runtime_root, goal=config.eval_goal, config_path=config_path))
+        print_json(
+            sync_memory(
+                repo_root,
+                runtime_root,
+                goal=config.eval_goal,
+                config_path=config_path,
+                governor_decision=_load_governor_decision(args.governor_decision),
+            )
+        )
         return
     if args.memory_command == "search":
         print_json(
@@ -582,7 +606,16 @@ def main() -> None:
                 f"Candidate id {args.candidate_id!r} was not found in the trial queue. "
                 f"Known candidate ids: {known}."
             )
-        print_json(run_once(config_path, args.project_command, trial=trial, overrides=parse_overrides(args.set), dry_run=args.dry_run))
+        print_json(
+            run_once(
+                config_path,
+                args.project_command,
+                trial=trial,
+                overrides=parse_overrides(args.set),
+                dry_run=args.dry_run,
+                memory_governor_decision=_load_governor_decision(args.memory_governor_decision),
+            )
+        )
         return
     if args.action == "loop":
         print_json(run_loop(config_path, args.project_command, dry_run=args.dry_run, limit=args.limit))
@@ -664,10 +697,18 @@ def main() -> None:
         print_json(surprise_status(runtime_root, limit=args.limit))
         return
     if args.action == "beliefs":
-        print_json(build_beliefs(repo_root, runtime_root))
+        print_json(build_beliefs(repo_root, runtime_root, governor_decision=_load_governor_decision(args.governor_decision)))
         return
     if args.action == "obsidian":
-        print_json(build_vault(repo_root, runtime_root, load_config(config_path), config_path=config_path))
+        print_json(
+            build_vault(
+                repo_root,
+                runtime_root,
+                load_config(config_path),
+                config_path=config_path,
+                governor_decision=_load_governor_decision(args.governor_decision),
+            )
+        )
         return
     if args.action == "collective":
         _handle_collective(args, config_path=config_path, repo_root=repo_root, runtime_root=runtime_root)

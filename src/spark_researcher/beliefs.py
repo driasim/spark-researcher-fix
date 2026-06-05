@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .authority import require_memory_write_authority
 from .config import load_config
 from .paths import beliefs_root, resolve_runtime_root
 from .runner import read_jsonl
@@ -273,7 +274,13 @@ def _render_self_edit_belief(proposal: dict[str, Any], review: dict[str, Any]) -
     )
 
 
-def build_beliefs(repo_root: Path, runtime_root: Path | None = None) -> dict[str, Any]:
+def build_beliefs(
+    repo_root: Path,
+    runtime_root: Path | None = None,
+    *,
+    governor_decision: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    require_memory_write_authority(governor_decision)
     runtime_root = runtime_root or resolve_runtime_root(repo_root / "spark-researcher.project.json")
     config = load_config(repo_root / "spark-researcher.project.json")
     output_root = _beliefs_root(runtime_root)

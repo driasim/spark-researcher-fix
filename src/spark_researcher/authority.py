@@ -12,6 +12,12 @@ ADVISORY_EXECUTE_MUTATION_CLASS = "external_network"
 ADVISORY_EXECUTE_ACTION_TYPE = "external_api_call"
 ADVISORY_EXECUTE_CAPABILITY_ID = f"capability:{ADVISORY_EXECUTE_OWNER_SYSTEM}:{ADVISORY_EXECUTE_TOOL_NAME}"
 
+MEMORY_WRITE_TOOL_NAME = "memory.write"
+MEMORY_WRITE_OWNER_SYSTEM = "domain-chip-memory"
+MEMORY_WRITE_MUTATION_CLASS = "writes_memory"
+MEMORY_WRITE_ACTION_TYPE = "write_memory"
+MEMORY_WRITE_CAPABILITY_ID = f"capability:{MEMORY_WRITE_OWNER_SYSTEM}:{MEMORY_WRITE_TOOL_NAME}"
+
 
 def _harness_core_source_candidates() -> list[Path]:
     candidates: list[Path] = []
@@ -65,4 +71,25 @@ def require_advisory_execution_authority(
         reasons = [str(item) for item in verification.get("reason_codes", []) if str(item).strip()]
         reason_text = ", ".join(reasons) if reasons else "governor_authority_denied"
         raise RuntimeError("Advisory execution requires GovernorDecisionV1 authority: " + reason_text)
+    return verification
+
+
+def require_memory_write_authority(
+    governor_decision: dict[str, Any] | None,
+    *,
+    action_id: str | None = None,
+) -> dict[str, Any]:
+    verifier = _load_verify_governor_tool_authority()
+    verification = verifier(
+        governor_decision,
+        tool_name=MEMORY_WRITE_TOOL_NAME,
+        owner_system=MEMORY_WRITE_OWNER_SYSTEM,
+        mutation_class=MEMORY_WRITE_MUTATION_CLASS,
+        action_id=action_id,
+        require_pre_execution_ledger=True,
+    )
+    if not verification.get("allowed"):
+        reasons = [str(item) for item in verification.get("reason_codes", []) if str(item).strip()]
+        reason_text = ", ".join(reasons) if reasons else "governor_authority_denied"
+        raise RuntimeError("Memory materialization requires GovernorDecisionV1 memory-write authority: " + reason_text)
     return verification

@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request
 
 from .adapters import adapter_request
-from .authority import require_advisory_execution_authority
+from .authority import require_advisory_execution_authority, require_memory_write_authority
 from .memory import record_episode, write_working_memory
 from .paths import advisory_root
 from .safe_url import safe_urlopen
@@ -144,7 +144,13 @@ def _bounded_research_text(value: Any, *, limit: int) -> str:
     return escape(compact, quote=False)
 
 
-def _write_research_artifact(runtime_root: Path, payload: dict[str, Any]) -> Path:
+def _write_research_artifact(
+    runtime_root: Path,
+    payload: dict[str, Any],
+    *,
+    governor_decision: dict[str, Any] | None = None,
+) -> Path:
+    require_memory_write_authority(governor_decision)
     root = advisory_root(runtime_root) / "research"
     root.mkdir(parents=True, exist_ok=True)
     path = root / f"{_now_slug()}.json"
@@ -220,8 +226,10 @@ def execute_with_research(
     command_override: list[str] | None = None,
     dry_run: bool = False,
     governor_decision: dict[str, Any] | None = None,
+    memory_governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     authority = None if dry_run else require_advisory_execution_authority(governor_decision)
+    memory_authority = None if dry_run or memory_governor_decision is None else require_memory_write_authority(memory_governor_decision)
     trace = start_trace(
         runtime_root,
         kind="advisory_research",
@@ -238,6 +246,14 @@ def execute_with_research(
             }
             if authority
             else {"mode": "dry_run"},
+            "memory_authority": {
+                "allowed": True,
+                "decision_id": memory_authority.get("decision_id"),
+                "ledger_id": memory_authority.get("ledger_id"),
+                "tool_name": memory_authority.get("tool_name"),
+            }
+            if memory_authority
+            else {"mode": "not_requested" if not dry_run else "dry_run"},
         },
     )
     if dry_run:
@@ -266,15 +282,17 @@ def execute_with_research(
         trace.finish(status="ok", attributes={"decision": initial.get("decision", initial.get("status", "unknown"))})
         return initial
     query = str(initial.get("research_query") or advisory.get("task") or "").strip()
-    write_working_memory(
-        runtime_root,
-        kind="research",
-        focus=query,
-        status="research_needed",
-        trace_id=trace.trace_id,
-        notes=[str(item) for item in initial.get("research_targets", [])[:2]],
-        questions=list(initial.get("clarifying_questions", []))[:2],
-    )
+    if memory_authority:
+        write_working_memory(
+            runtime_root,
+            kind="research",
+            focus=query,
+            status="research_needed",
+            trace_id=trace.trace_id,
+            notes=[str(item) for item in initial.get("research_targets", [])[:2]],
+            questions=list(initial.get("clarifying_questions", []))[:2],
+            governor_decision=memory_governor_decision,
+        )
     with trace.span("bounded_research", attributes={"query": query}):
         results = _bounded_web_results(query)
     research = {
@@ -301,21 +319,32 @@ def execute_with_research(
             ],
         },
     )
-    artifact_path = _write_research_artifact(runtime_root, research)
-    research["artifact_path"] = str(artifact_path)
+    artifact_path = None
+    if memory_authority:
+        artifact_path = _write_research_artifact(runtime_root, research, governor_decision=memory_governor_decision)
+        research["artifact_path"] = str(artifact_path)
+    else:
+        research["artifact_path"] = None
     if not results:
-        record_episode(
-            runtime_root,
-            kind="research",
-            title="Research retry found no usable notes",
-            summary=f"Query `{query}` returned no bounded web notes.",
-            status="empty",
-            trace_id=trace.trace_id,
-        )
+        if memory_authority:
+            record_episode(
+                runtime_root,
+                kind="research",
+                title="Research retry found no usable notes",
+                summary=f"Query `{query}` returned no bounded web notes.",
+                status="empty",
+                trace_id=trace.trace_id,
+                governor_decision=memory_governor_decision,
+            )
         packet = dict(initial)
         packet["research_attempted"] = True
         packet["research_result_count"] = 0
-        packet["research_artifact_path"] = str(artifact_path)
+        if artifact_path is not None:
+            packet["research_artifact_path"] = str(artifact_path)
+        packet["memory_materialization"] = {
+            "written": bool(memory_authority),
+            "reason": "authorized" if memory_authority else "missing_memory_write_authority",
+        }
         packet["recommended_actions"] = [
             "Research attempt returned no usable web notes.",
             *list(packet.get("recommended_actions", [])),
@@ -346,23 +375,31 @@ def execute_with_research(
         ]
         followup["research_trace_id"] = trace.trace_id
         followup["research_trace_path"] = str(trace.path)
-    record_episode(
-        runtime_root,
-        kind="research",
-        title="Bounded research retry completed",
-        summary=f"Query `{query}` collected {len(results)} notes and ended with `{followup.get('decision', followup.get('status', 'unknown'))}`.",
-        status=str(followup.get("decision", followup.get("status", "unknown"))),
-        trace_id=trace.trace_id,
-    )
-    write_working_memory(
-        runtime_root,
-        kind="research",
-        focus=str(advisory.get("task") or query),
-        status=str(followup.get("decision", followup.get("status", "unknown"))),
-        trace_id=trace.trace_id,
-        notes=[f"research query: {query}", f"result count: {len(results)}"],
-        questions=[],
-    )
+    if memory_authority:
+        record_episode(
+            runtime_root,
+            kind="research",
+            title="Bounded research retry completed",
+            summary=f"Query `{query}` collected {len(results)} notes and ended with `{followup.get('decision', followup.get('status', 'unknown'))}`.",
+            status=str(followup.get("decision", followup.get("status", "unknown"))),
+            trace_id=trace.trace_id,
+            governor_decision=memory_governor_decision,
+        )
+        write_working_memory(
+            runtime_root,
+            kind="research",
+            focus=str(advisory.get("task") or query),
+            status=str(followup.get("decision", followup.get("status", "unknown"))),
+            trace_id=trace.trace_id,
+            notes=[f"research query: {query}", f"result count: {len(results)}"],
+            questions=[],
+            governor_decision=memory_governor_decision,
+        )
+    if isinstance(followup, dict):
+        followup["memory_materialization"] = {
+            "written": bool(memory_authority),
+            "reason": "authorized" if memory_authority else "missing_memory_write_authority",
+        }
     trace.finish(
         status="ok",
         attributes={

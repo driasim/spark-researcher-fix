@@ -358,9 +358,17 @@ def build_record(
     return record
 
 
-def _refresh_chip_working_memory(config: ProjectConfig, runtime_root: Path, record: dict[str, Any]) -> None:
+def _refresh_chip_working_memory(
+    config: ProjectConfig,
+    runtime_root: Path,
+    record: dict[str, Any],
+    *,
+    governor_decision: dict[str, Any] | None = None,
+) -> None:
     from .memory import write_working_memory
 
+    if governor_decision is None:
+        return
     chip_result = record.get("chip_result", {})
     if not isinstance(chip_result, dict):
         return
@@ -417,6 +425,7 @@ def _refresh_chip_working_memory(config: ProjectConfig, runtime_root: Path, reco
         trace_id=str(record.get("trace_id") or "") or None,
         notes=notes,
         questions=questions,
+        governor_decision=governor_decision,
     )
 
 
@@ -427,6 +436,7 @@ def run_once(
     trial: CandidateTrial | None = None,
     overrides: dict[str, str] | None = None,
     dry_run: bool = False,
+    memory_governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = load_config(config_path)
     runtime_root = resolve_runtime_root(config_path)
@@ -511,7 +521,7 @@ def run_once(
             (run_dir / "result.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             append_jsonl(ledger_path(runtime_root), record)
         write_spark_swarm_collective_payload(config_path.parent.resolve(), runtime_root, config, record)
-        _refresh_chip_working_memory(config, runtime_root, record)
+        _refresh_chip_working_memory(config, runtime_root, record, governor_decision=memory_governor_decision)
         if record["status"] != "ok" or verdict in {"regressed", "unknown"}:
             failure_type = "run_failed" if record["status"] != "ok" else f"run_{verdict}"
             evidence = [

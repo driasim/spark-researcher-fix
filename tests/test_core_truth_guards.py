@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from memory_governor import memory_governor_decision
 from spark_researcher import obsidian
 from spark_researcher import candidates, runner, trainers, trial_queue
 from spark_researcher.config import CandidateTrial, CommandSpec, MetricSpec, ProjectConfig, load_config
@@ -281,7 +282,13 @@ def test_build_vault_skips_malformed_and_non_object_trainer_rows(tmp_path: Path,
     monkeypatch.setattr(obsidian, "load_episode_memory", lambda *args, **kwargs: [])
     monkeypatch.setattr(obsidian, "chip_has_hook", lambda *args, **kwargs: False)
 
-    result = obsidian.build_vault(repo_root, runtime_root, config, config_path=config_path)
+    result = obsidian.build_vault(
+        repo_root,
+        runtime_root,
+        config,
+        config_path=config_path,
+        governor_decision=memory_governor_decision(),
+    )
 
     assert result["trainer_entries"] == 1
     trainer_state = (runtime_root / "obsidian-vault" / "05-Runtime" / "Trainer State.md").read_text(encoding="utf-8")

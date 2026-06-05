@@ -30,6 +30,12 @@ def _governor_decision() -> dict:
         args_path="advisory:test",
         requires_confirmation=True,
     )
+    fresh_intent = evidence_ref(
+        "fresh_user_intent",
+        "test",
+        "Fresh owner request for Researcher advisory execution.",
+        confidence=1.0,
+    )
     approval = evidence_ref(
         "human_confirmation",
         "test",
@@ -40,7 +46,7 @@ def _governor_decision() -> dict:
         selected_move="execute_action",
         intent_summary="Execute Spark Researcher advisory.",
         raw_turn_summary="Owner requested provider execution for this advisory.",
-        evidence=[approval],
+        evidence=[fresh_intent, approval],
         proposed_actions=[action],
         authority_state="executable",
         risk_tier="medium",
