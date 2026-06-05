@@ -12,11 +12,30 @@ ADVISORY_EXECUTE_MUTATION_CLASS = "external_network"
 ADVISORY_EXECUTE_ACTION_TYPE = "external_api_call"
 ADVISORY_EXECUTE_CAPABILITY_ID = f"capability:{ADVISORY_EXECUTE_OWNER_SYSTEM}:{ADVISORY_EXECUTE_TOOL_NAME}"
 
-MEMORY_WRITE_TOOL_NAME = "memory.write"
+_DEFAULT_MEMORY_WRITE_TOOL_NAME = "domain-chip-memory.memory.write"
+_DEFAULT_MEMORY_WRITE_CAPABILITY_ID = "capability:domain-chip-memory:memory.write"
+_DEFAULT_MEMORY_WRITE_ACTION_TYPE = "memory.write"
+
+try:
+    from domain_chip_memory import sdk as _domain_memory_sdk
+except ModuleNotFoundError:
+    _domain_memory_sdk = None
+
+_DOMAIN_MEMORY_WRITE_TOOL_NAME = str(
+    getattr(_domain_memory_sdk, "MEMORY_WRITE_TOOL_NAME", _DEFAULT_MEMORY_WRITE_TOOL_NAME)
+)
+_DOMAIN_MEMORY_WRITE_CAPABILITY_ID = str(
+    getattr(_domain_memory_sdk, "MEMORY_WRITE_CAPABILITY_ID", _DEFAULT_MEMORY_WRITE_CAPABILITY_ID)
+)
+_DOMAIN_MEMORY_WRITE_ACTION_TYPE = str(
+    getattr(_domain_memory_sdk, "MEMORY_WRITE_ACTION_TYPE", _DEFAULT_MEMORY_WRITE_ACTION_TYPE)
+)
+
+MEMORY_WRITE_TOOL_NAME = _DOMAIN_MEMORY_WRITE_TOOL_NAME
 MEMORY_WRITE_OWNER_SYSTEM = "domain-chip-memory"
 MEMORY_WRITE_MUTATION_CLASS = "writes_memory"
-MEMORY_WRITE_ACTION_TYPE = "write_memory"
-MEMORY_WRITE_CAPABILITY_ID = f"capability:{MEMORY_WRITE_OWNER_SYSTEM}:{MEMORY_WRITE_TOOL_NAME}"
+MEMORY_WRITE_ACTION_TYPE = _DOMAIN_MEMORY_WRITE_ACTION_TYPE
+MEMORY_WRITE_CAPABILITY_ID = _DOMAIN_MEMORY_WRITE_CAPABILITY_ID
 
 CHIP_CREATE_TOOL_NAME = "researcher.chip.create"
 CHIP_CREATE_OWNER_SYSTEM = "spark-researcher"
@@ -64,6 +83,48 @@ def _load_verify_governor_tool_authority() -> Callable[..., dict[str, Any]]:
     raise RuntimeError("spark_harness_core_unavailable")
 
 
+def _load_harness_kernel_class() -> type[Any]:
+    try:
+        from spark_harness_core import HarnessKernel
+
+        return HarnessKernel
+    except ModuleNotFoundError:
+        pass
+
+    for candidate in _harness_core_source_candidates():
+        if not (candidate / "spark_harness_core" / "__init__.py").exists():
+            continue
+        candidate_text = str(candidate)
+        if candidate_text not in sys.path:
+            sys.path.insert(0, candidate_text)
+        try:
+            from spark_harness_core import HarnessKernel
+
+            return HarnessKernel
+        except ModuleNotFoundError:
+            continue
+    raise RuntimeError("spark_harness_core_unavailable")
+
+
+def _contains_string(payload: Any, needle: str) -> bool:
+    if not needle:
+        return True
+    if isinstance(payload, dict):
+        return any(_contains_string(key, needle) or _contains_string(value, needle) for key, value in payload.items())
+    if isinstance(payload, (list, tuple, set)):
+        return any(_contains_string(item, needle) for item in payload)
+    return str(payload) == needle
+
+
+def memory_authority_ref(kind: str, value: str | Path) -> str:
+    return f"spark-researcher.memory.{kind}:{Path(value) if isinstance(value, Path) else value}"
+
+
+def memory_authority_refs(kind: str, *values: str | Path) -> tuple[str, ...]:
+    refs = tuple(memory_authority_ref(kind, value) for value in values if str(value).strip())
+    return refs or (f"spark-researcher.memory.{kind}",)
+
+
 def require_advisory_execution_authority(
     governor_decision: dict[str, Any] | None,
     *,
@@ -89,17 +150,33 @@ def require_advisory_execution_authority(
 def require_memory_write_authority(
     governor_decision: dict[str, Any] | None,
     *,
+    binding_refs: tuple[str, ...],
     action_id: str | None = None,
 ) -> dict[str, Any]:
-    verifier = _load_verify_governor_tool_authority()
-    verification = verifier(
+    HarnessKernel = _load_harness_kernel_class()
+    surface = "memory"
+    if isinstance(governor_decision, dict) and str(governor_decision.get("surface") or "").strip():
+        surface = str(governor_decision.get("surface") or "memory")
+    kernel = HarnessKernel(surface=surface)
+    verification = kernel.verify_governor_execution_authority(
         governor_decision,
+        expected_capability_id=MEMORY_WRITE_CAPABILITY_ID,
+        expected_action_type=MEMORY_WRITE_ACTION_TYPE,
         tool_name=MEMORY_WRITE_TOOL_NAME,
-        owner_system=MEMORY_WRITE_OWNER_SYSTEM,
-        mutation_class=MEMORY_WRITE_MUTATION_CLASS,
         action_id=action_id,
         require_pre_execution_ledger=True,
     )
+    refs = tuple(ref for ref in binding_refs if str(ref).strip())
+    if verification.get("allowed") and not refs:
+        verification = {**verification, "allowed": False, "reason_codes": ["authority_binding_refs_missing"]}
+    if verification.get("allowed"):
+        missing_refs = [ref for ref in refs if not _contains_string(governor_decision, ref)]
+        if missing_refs:
+            verification = {
+                **verification,
+                "allowed": False,
+                "reason_codes": ["authority_binding_missing", *missing_refs],
+            }
     if not verification.get("allowed"):
         reasons = [str(item) for item in verification.get("reason_codes", []) if str(item).strip()]
         reason_text = ", ".join(reasons) if reasons else "governor_authority_denied"

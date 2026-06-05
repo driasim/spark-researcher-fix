@@ -8,6 +8,7 @@ import pytest
 
 from memory_governor import memory_governor_decision
 from spark_researcher import obsidian
+from spark_researcher.obsidian import vault_authority_refs
 from spark_researcher import candidates, runner, trainers, trial_queue
 from spark_researcher.config import CandidateTrial, CommandSpec, MetricSpec, ProjectConfig, load_config
 from spark_researcher.outcomes import load_advisory_outcomes
@@ -287,7 +288,7 @@ def test_build_vault_skips_malformed_and_non_object_trainer_rows(tmp_path: Path,
         runtime_root,
         config,
         config_path=config_path,
-        governor_decision=memory_governor_decision(),
+        governor_decision=memory_governor_decision(vault_authority_refs(repo_root, runtime_root, config_path)),
     )
 
     assert result["trainer_entries"] == 1

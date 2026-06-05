@@ -11,8 +11,8 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request
 
 from .adapters import adapter_request
-from .authority import require_advisory_execution_authority, require_memory_write_authority
-from .memory import record_episode, write_working_memory
+from .authority import memory_authority_refs, require_advisory_execution_authority, require_memory_write_authority
+from .memory import episode_memory_authority_refs, record_episode, working_memory_authority_refs, write_working_memory
 from .paths import advisory_root
 from .safe_url import safe_urlopen
 from .tracing import start_trace
@@ -150,12 +150,28 @@ def _write_research_artifact(
     *,
     governor_decision: dict[str, Any] | None = None,
 ) -> Path:
-    require_memory_write_authority(governor_decision)
     root = advisory_root(runtime_root) / "research"
+    require_memory_write_authority(governor_decision, binding_refs=research_artifact_authority_refs(runtime_root))
     root.mkdir(parents=True, exist_ok=True)
     path = root / f"{_now_slug()}.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
+
+def research_artifact_authority_refs(runtime_root: Path) -> tuple[str, ...]:
+    return memory_authority_refs("research-artifact", advisory_root(runtime_root) / "research")
+
+
+def research_memory_authority_refs(runtime_root: Path) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            [
+                *working_memory_authority_refs(runtime_root),
+                *episode_memory_authority_refs(runtime_root),
+                *research_artifact_authority_refs(runtime_root),
+            ]
+        )
+    )
 
 
 def _research_task(original_task: str, research: dict[str, Any]) -> str:
@@ -229,7 +245,11 @@ def execute_with_research(
     memory_governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     authority = None if dry_run else require_advisory_execution_authority(governor_decision)
-    memory_authority = None if dry_run or memory_governor_decision is None else require_memory_write_authority(memory_governor_decision)
+    memory_authority = (
+        None
+        if dry_run or memory_governor_decision is None
+        else require_memory_write_authority(memory_governor_decision, binding_refs=research_memory_authority_refs(runtime_root))
+    )
     trace = start_trace(
         runtime_root,
         kind="advisory_research",

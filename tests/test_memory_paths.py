@@ -6,9 +6,10 @@ from pathlib import Path
 
 from memory_governor import memory_governor_decision
 from spark_researcher.beliefs import build_beliefs
+from spark_researcher.beliefs import beliefs_authority_refs
 from spark_researcher.config import CommandSpec, MetricSpec, ProjectConfig, save_config
 from spark_researcher import memory
-from spark_researcher.memory import load_working_memory, sync_memory
+from spark_researcher.memory import load_working_memory, sync_memory, sync_memory_authority_refs
 
 
 def _write_config(repo_root: Path) -> Path:
@@ -65,7 +66,7 @@ def test_build_beliefs_bounds_long_belief_filenames(tmp_path: Path) -> None:
     ]
     ledger_path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
 
-    manifest = build_beliefs(repo_root, runtime_root, governor_decision=memory_governor_decision())
+    manifest = build_beliefs(repo_root, runtime_root, governor_decision=memory_governor_decision(beliefs_authority_refs(repo_root, runtime_root)))
 
     belief = manifest["beliefs"][0]
     belief_path = Path(str(belief["path"]))
@@ -120,7 +121,7 @@ def test_sync_memory_dedupes_duplicate_chip_docs_and_bounds_paths(monkeypatch, t
         runtime_root,
         goal="maximize",
         config_path=config_path,
-        governor_decision=memory_governor_decision(),
+        governor_decision=memory_governor_decision(sync_memory_authority_refs(repo_root, runtime_root, config_path)),
     )
 
     chip_documents = manifest["chip_documents"]

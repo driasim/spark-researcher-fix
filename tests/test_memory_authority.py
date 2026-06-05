@@ -12,10 +12,20 @@ from spark_researcher.authority import (
     ADVISORY_EXECUTE_ACTION_TYPE,
     ADVISORY_EXECUTE_CAPABILITY_ID,
     ADVISORY_EXECUTE_TOOL_NAME,
+    MEMORY_WRITE_ACTION_TYPE,
+    MEMORY_WRITE_CAPABILITY_ID,
+    MEMORY_WRITE_TOOL_NAME,
 )
 from spark_researcher.beliefs import build_beliefs
 from spark_researcher.config import CommandSpec, MetricSpec, ProjectConfig, load_config, save_config
-from spark_researcher.memory import record_episode, search_memory, sync_memory, write_working_memory
+from spark_researcher.memory import (
+    record_episode,
+    search_memory,
+    sync_memory,
+    sync_memory_authority_refs,
+    working_memory_authority_refs,
+    write_working_memory,
+)
 from spark_researcher.obsidian import build_vault
 from spark_researcher.packets import packet_status
 from spark_researcher.paths import memory_root, resolve_runtime_root, vault_root
@@ -109,6 +119,40 @@ def test_working_memory_requires_memory_governor_before_write(tmp_path: Path) ->
     assert not (memory_root(tmp_path) / "working.json").exists()
 
 
+def test_memory_write_constants_match_domain_chip_memory_contract() -> None:
+    assert MEMORY_WRITE_TOOL_NAME == "domain-chip-memory.memory.write"
+    assert MEMORY_WRITE_CAPABILITY_ID == "capability:domain-chip-memory:memory.write"
+    assert MEMORY_WRITE_ACTION_TYPE == "memory.write"
+
+
+def test_working_memory_rejects_stale_memory_governor_binding(tmp_path: Path) -> None:
+    stale = memory_governor_decision(("spark-researcher.memory.working:other-runtime",))
+
+    with pytest.raises(RuntimeError, match="authority_binding_missing"):
+        write_working_memory(
+            tmp_path,
+            kind="test",
+            focus="stale authority",
+            status="blocked",
+            governor_decision=stale,
+        )
+
+    assert not (memory_root(tmp_path) / "working.json").exists()
+
+
+def test_working_memory_accepts_bound_memory_governor(tmp_path: Path) -> None:
+    payload = write_working_memory(
+        tmp_path,
+        kind="test",
+        focus="bound authority",
+        status="accepted",
+        governor_decision=memory_governor_decision(working_memory_authority_refs(tmp_path)),
+    )
+
+    assert payload["focus"] == "bound authority"
+    assert (memory_root(tmp_path) / "working.json").exists()
+
+
 def test_episode_requires_memory_governor_before_write(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError, match="missing_governor_decision"):
         record_episode(tmp_path, kind="test", title="No write", summary="blocked", status="blocked")
@@ -141,6 +185,45 @@ def test_sync_memory_rejects_non_memory_governor(tmp_path: Path) -> None:
             goal="maximize",
             config_path=config_path,
             governor_decision=_advisory_governor_decision(),
+        )
+
+    assert not (memory_root(runtime_root) / "documents").exists()
+
+
+def test_sync_memory_rejects_stale_memory_governor_binding(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    runtime_root = tmp_path / "runtime"
+    config_path = _write_config(repo_root)
+    _write_ledger(runtime_root)
+    stale = memory_governor_decision(("spark-researcher.memory.sync:other-runtime",))
+
+    with pytest.raises(RuntimeError, match="authority_binding_missing"):
+        sync_memory(
+            repo_root,
+            runtime_root,
+            goal="maximize",
+            config_path=config_path,
+            governor_decision=stale,
+        )
+
+    assert not (memory_root(runtime_root) / "documents").exists()
+
+
+def test_sync_memory_rejects_copied_memory_governor_ledger(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    runtime_root = tmp_path / "runtime"
+    config_path = _write_config(repo_root)
+    _write_ledger(runtime_root)
+    decision = memory_governor_decision(sync_memory_authority_refs(repo_root, runtime_root, config_path))
+    decision["tool_ledgers"][0]["action_id"] = "copied-action"
+
+    with pytest.raises(RuntimeError, match="governor_missing_matching_tool_ledger"):
+        sync_memory(
+            repo_root,
+            runtime_root,
+            goal="maximize",
+            config_path=config_path,
+            governor_decision=decision,
         )
 
     assert not (memory_root(runtime_root) / "documents").exists()
@@ -199,7 +282,7 @@ def test_sync_memory_accepts_memory_governor(tmp_path: Path) -> None:
         runtime_root,
         goal="maximize",
         config_path=config_path,
-        governor_decision=memory_governor_decision(),
+        governor_decision=memory_governor_decision(sync_memory_authority_refs(repo_root, runtime_root, config_path)),
     )
 
     assert manifest["document_count"] >= 1

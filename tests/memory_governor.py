@@ -15,14 +15,16 @@ from spark_harness_core import HarnessKernel, evidence_ref
 from spark_researcher.authority import MEMORY_WRITE_ACTION_TYPE, MEMORY_WRITE_CAPABILITY_ID, MEMORY_WRITE_TOOL_NAME
 
 
-def memory_governor_decision() -> dict:
+def memory_governor_decision(binding_refs: tuple[str, ...] = ("memory:materialize",)) -> dict:
+    refs = tuple(str(ref) for ref in binding_refs if str(ref).strip())
+    args_path = refs[0] if refs else "memory:materialize"
     kernel = HarnessKernel(surface="cli")
     action = kernel.proposed_action(
         capability_id=MEMORY_WRITE_CAPABILITY_ID,
         action_type=MEMORY_WRITE_ACTION_TYPE,
         risk_tier="low",
         summary="Materialize Spark memory artifacts.",
-        args_path="memory:materialize",
+        args_path=args_path,
         requires_confirmation=False,
     )
     fresh_intent = evidence_ref(
@@ -37,11 +39,20 @@ def memory_governor_decision() -> dict:
         "Owner approved governed memory materialization.",
         confidence=1.0,
     )
+    binding_evidence = [
+        evidence_ref(
+            "authority_binding_ref",
+            "test",
+            ref,
+            confidence=1.0,
+        )
+        for ref in refs
+    ]
     envelope = kernel.create_envelope(
         selected_move="execute_action",
         intent_summary="Materialize Spark memory.",
         raw_turn_summary="Owner requested governed memory materialization.",
-        evidence=[fresh_intent, approval],
+        evidence=[fresh_intent, approval, *binding_evidence],
         proposed_actions=[action],
         authority_state="executable",
         risk_tier="low",

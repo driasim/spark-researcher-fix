@@ -9,8 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .authority import require_memory_write_authority
-from .beliefs import build_beliefs
+from .authority import memory_authority_refs, require_memory_write_authority
+from .beliefs import beliefs_authority_refs, build_beliefs
 from .chips import chip_has_hook, invoke_chip_hook
 from .paths import beliefs_root, memory_root, self_edit_root
 from .runner import locked_file, read_jsonl
@@ -42,6 +42,24 @@ def _working_path(runtime_root: Path) -> Path:
 
 def _episodes_path(runtime_root: Path) -> Path:
     return memory_root(runtime_root) / "episodes.jsonl"
+
+
+def working_memory_authority_refs(runtime_root: Path) -> tuple[str, ...]:
+    return memory_authority_refs("working", _working_path(runtime_root))
+
+
+def episode_memory_authority_refs(runtime_root: Path) -> tuple[str, ...]:
+    return memory_authority_refs("episode", _episodes_path(runtime_root))
+
+
+def sync_memory_authority_refs(repo_root: Path, runtime_root: Path, config_path: Path | None = None) -> tuple[str, ...]:
+    refs = [
+        *memory_authority_refs("sync", _documents_root(runtime_root), _manifest_path(runtime_root), runtime_root / "artifacts" / "ledger" / "runs.jsonl"),
+        *beliefs_authority_refs(repo_root, runtime_root),
+    ]
+    if config_path is not None:
+        refs.extend(memory_authority_refs("sync.config", config_path))
+    return tuple(dict.fromkeys(refs))
 
 
 def _safe_unlink(path: Path) -> None:
@@ -460,7 +478,7 @@ def write_working_memory(
     questions: list[str] | None = None,
     governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    require_memory_write_authority(governor_decision)
+    require_memory_write_authority(governor_decision, binding_refs=working_memory_authority_refs(runtime_root))
     payload = {
         "updated_at": _now_iso(),
         "kind": kind,
@@ -496,7 +514,7 @@ def record_episode(
     trace_id: str | None = None,
     governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    require_memory_write_authority(governor_decision)
+    require_memory_write_authority(governor_decision, binding_refs=episode_memory_authority_refs(runtime_root))
     payload = {
         "created_at": _now_iso(),
         "kind": kind,
@@ -568,7 +586,7 @@ def sync_memory(
     config_path: Path | None = None,
     governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    require_memory_write_authority(governor_decision)
+    require_memory_write_authority(governor_decision, binding_refs=sync_memory_authority_refs(repo_root, runtime_root, config_path))
     rows = read_jsonl(runtime_root / "artifacts" / "ledger" / "runs.jsonl")
     docs_root = _documents_root(runtime_root)
     docs_root.mkdir(parents=True, exist_ok=True)

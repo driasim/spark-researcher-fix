@@ -5,11 +5,11 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from .authority import require_memory_write_authority
+from .authority import memory_authority_refs, require_memory_write_authority
 from .beliefs import build_beliefs
 from .chips import chip_has_hook, invoke_chip_hook
 from .config import ProjectConfig
-from .memory import load_episode_memory, load_working_memory, sync_memory
+from .memory import load_episode_memory, load_working_memory, sync_memory, sync_memory_authority_refs
 from .packets import packet_status
 from .paths import beliefs_root, trainers_root, vault_root
 from .runner import ledger_summary, read_jsonl
@@ -52,6 +52,17 @@ def copy_runtime_beliefs(runtime_root: Path, output_root: Path) -> list[str]:
         shutil.copyfile(path, target)
         written.append(str(target))
     return written
+
+
+def vault_authority_refs(repo_root: Path, runtime_root: Path, config_path: Path | None = None) -> tuple[str, ...]:
+    output_root = vault_root(runtime_root)
+    refs = [
+        *memory_authority_refs("obsidian", output_root),
+        *sync_memory_authority_refs(repo_root, runtime_root, config_path),
+    ]
+    if config_path is not None:
+        refs.extend(memory_authority_refs("obsidian.config", config_path))
+    return tuple(dict.fromkeys(refs))
 
 
 def render_home(
@@ -369,8 +380,8 @@ def build_vault(
     config_path: Path | None = None,
     governor_decision: dict[str, Any] | None = None,
 ) -> dict[str, object]:
-    require_memory_write_authority(governor_decision)
     effective_config_path = config_path or (repo_root / "spark-researcher.project.json")
+    require_memory_write_authority(governor_decision, binding_refs=vault_authority_refs(repo_root, runtime_root, effective_config_path))
     rows = read_jsonl(runtime_root / "artifacts" / "ledger" / "runs.jsonl")
     memory_manifest = sync_memory(
         repo_root,
