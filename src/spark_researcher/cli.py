@@ -198,6 +198,7 @@ def build_parser() -> argparse.ArgumentParser:
     chips_init_parser.add_argument("--goal", choices=["maximize", "minimize"], default="maximize")
     chips_init_parser.add_argument("--package-name")
     chips_init_parser.add_argument("--preset", choices=["generic", "crypto-trading", "xcontent"], default="generic")
+    chips_init_parser.add_argument("--governor-decision")
     chips_status_parser = chips_sub.add_parser("status")
     add_config_argument(chips_status_parser)
     chips_validate_parser = chips_sub.add_parser("validate")
@@ -671,9 +672,10 @@ def main() -> None:
                         goal=args.goal,
                         package_name=args.package_name,
                         preset=args.preset,
+                        governor_decision=_load_governor_decision(args.governor_decision),
                     )
                 )
-            except ValueError as exc:
+            except (RuntimeError, ValueError) as exc:
                 raise SystemExit(str(exc))
             return
         if args.chips_command == "validate":
