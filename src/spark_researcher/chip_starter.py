@@ -222,6 +222,7 @@ def _generic_cli(package_name: str, domain: str, metric_name: str, goal: str) ->
             "from pathlib import Path",
             "",
             "def _load(path: str) -> dict:",
+# BUG: Uncaught JSONDecodeError at line 225
             '    return json.loads(Path(path).read_text(encoding="utf-8-sig"))',
             "",
             "def _write(path: str, payload: dict) -> None:",

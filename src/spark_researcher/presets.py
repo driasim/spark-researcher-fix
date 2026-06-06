@@ -242,6 +242,7 @@ def _write_toy_files(target_dir: Path) -> None:
 
 
             def main() -> None:
+# BUG: Uncaught JSONDecodeError at line 245
                 config = json.loads(Path("config.json").read_text(encoding="utf-8"))
                 learning_rate = float(config["learning_rate"])
                 weight_decay = float(config["weight_decay"])

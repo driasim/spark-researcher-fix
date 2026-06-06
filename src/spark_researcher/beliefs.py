@@ -310,6 +310,7 @@ def build_beliefs(repo_root: Path, runtime_root: Path | None = None) -> dict[str
             review_path = proposal_path.parent / "review.json"
             if not review_path.exists():
                 continue
+# BUG: Uncaught JSONDecodeError at line 313
             proposal = json.loads(proposal_path.read_text(encoding="utf-8"))
             review = json.loads(review_path.read_text(encoding="utf-8"))
             if review.get("decision") != "approve":
