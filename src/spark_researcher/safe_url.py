@@ -77,7 +77,7 @@ def safe_urlopen(request: Request | str, *, timeout: float):
     assert_safe_url(url)
     opener = build_opener(_SafeRedirectHandler)
     try:
-        return opener.open(request, timeout=timeout)
+        return opener.open(request, timeout=timeout, encoding="utf-8")
     except UnsafeURL:
         raise
     except URLError:
