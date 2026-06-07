@@ -4,6 +4,9 @@ import json
 import re
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
+
+from .authority import require_chip_create_authority
 
 
 def _slug(value: str) -> str:
@@ -74,6 +77,19 @@ def ensure_external_chip_target(target_dir: Path) -> Path:
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
+
+
+def _authority_summary(verification: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema_version": verification.get("schema_version"),
+        "allowed": bool(verification.get("allowed")),
+        "decision_id": verification.get("decision_id"),
+        "turn_id": verification.get("turn_id"),
+        "tool_name": verification.get("tool_name"),
+        "capability_id": verification.get("capability_id"),
+        "authorization_decision_id": verification.get("authorization_decision_id"),
+        "ledger_id": verification.get("ledger_id"),
+    }
 
 
 def _gitignore() -> str:
@@ -435,7 +451,10 @@ def _crypto_cli(package_name: str) -> str:
         REGIME_MATCH = {{"trend_regime_following|trend": 0.08, "mean_reversion_liquidity_reclaim|range": 0.08, "breakout_volatility_expansion|high_vol": 0.09, "risk_first_asymmetric_capture|event_driven": 0.07}}
 
         def _load(path: str) -> dict:
-            return json.loads(Path(path).read_text(encoding="utf-8-sig"))
+                        try:
+                            return json.loads(Path(path).read_text(encoding="utf-8-sig"))
+                        except json.JSONDecodeError:
+                            return {}
 
         def _write(path: str, payload: dict) -> None:
             Path(path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
@@ -1161,9 +1180,10 @@ def init_chip(
     goal: str = "maximize",
     package_name: str | None = None,
     preset: str = "generic",
-) -> dict[str, str]:
+    governor_decision: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     root = ensure_external_chip_target(target_dir)
-    root.mkdir(parents=True, exist_ok=True)
+    authority = require_chip_create_authority(governor_decision)
     package = package_name or _package_name(chip_name)
     if preset == "crypto-trading":
         files = {
@@ -1208,6 +1228,7 @@ def init_chip(
     existing = [str(path) for path in files if path.exists()]
     if existing:
         raise FileExistsError(f"Chip starter refused to overwrite existing files: {', '.join(existing)}")
+    root.mkdir(parents=True, exist_ok=True)
     for path, content in files.items():
         _write(path, content)
     return {
@@ -1220,5 +1241,6 @@ def init_chip(
         "manifest_path": str(root / "spark-chip.json"),
         "config_path": str(root / "spark-researcher.project.json"),
         "preset": preset,
+        "authority": _authority_summary(authority),
         "next_steps": _next_steps(root),
     }
